@@ -20,6 +20,8 @@ const settings: Settings = {
   ptsBracketFinal: 8,
   ptsBracketWinner: 12,
   bracketLockAt: null,
+  lastSyncedAt: null,
+  liveSyncSeconds: 30,
 };
 
 test("scoreTier: exact match", () => {

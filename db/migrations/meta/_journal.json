@@ -8,6 +8,13 @@
       "when": 1780653918737,
       "tag": "0000_swift_argent",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780656886888,
+      "tag": "0001_foamy_moonstone",
+      "breakpoints": true
     }
   ]
 }

@@ -92,6 +92,7 @@ const settingsSchema = z.object({
   ptsBracketSf: z.coerce.number().int().min(0).max(100),
   ptsBracketFinal: z.coerce.number().int().min(0).max(100),
   ptsBracketWinner: z.coerce.number().int().min(0).max(100),
+  liveSyncSeconds: z.coerce.number().int().min(10).max(3600),
 });
 
 export async function adminUpdateSettings(

@@ -8,6 +8,7 @@ import {
   isMatchLocked,
 } from "@/lib/queries";
 import { TeamBadge } from "@/components/team-badge";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export default async function DashboardPage() {
   const session = await requireUser();
@@ -18,6 +19,9 @@ export default async function DashboardPage() {
   ]);
 
   const me = leaderboard.find((r) => r.userId === session.userId);
+
+  // Matches currently being played (live scores update as the sync runs).
+  const live = allMatches.filter((m) => m.status === "IN_PLAY" || m.status === "PAUSED");
 
   // Not locked => scheduled and not yet kicked off, i.e. still open to predict.
   const upcoming = allMatches.filter((m) => !isMatchLocked(m)).slice(0, 6);
@@ -30,9 +34,45 @@ export default async function DashboardPage() {
 
   return (
     <AppShell>
+      {/* Refresh faster while matches are live, slower otherwise. */}
+      <LiveRefresh intervalMs={live.length > 0 ? 20000 : 60000} />
+
       <h1 className="mb-4 text-2xl font-bold text-slate-900">
         Hi {session.displayName} 👋
       </h1>
+
+      {live.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+            </span>
+            Live now
+          </h2>
+          <ul className="space-y-2">
+            {live.map((m) => (
+              <li
+                key={m.id}
+                className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2"
+              >
+                <div className="justify-self-end">
+                  <TeamBadge team={m.homeTeam} placeholder={m.homePlaceholder} align="right" />
+                </div>
+                <Link
+                  href={`/matches/${m.id}`}
+                  className="rounded bg-white px-2 py-0.5 text-center font-mono text-sm font-bold text-slate-900 ring-1 ring-red-200"
+                >
+                  {m.homeScore ?? 0}:{m.awayScore ?? 0}
+                </Link>
+                <div className="justify-self-start">
+                  <TeamBadge team={m.awayTeam} placeholder={m.awayPlaceholder} align="left" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Your rank" value={me ? `#${me.rank}` : "–"} />

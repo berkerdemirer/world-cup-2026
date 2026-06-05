@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/session";
 import { getLeaderboard } from "@/lib/queries";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export default async function LeaderboardPage() {
   const session = await requireUser();
@@ -8,6 +9,7 @@ export default async function LeaderboardPage() {
 
   return (
     <AppShell>
+      <LiveRefresh intervalMs={60000} />
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-slate-900">Leaderboard</h1>
         <p className="text-sm text-slate-500">

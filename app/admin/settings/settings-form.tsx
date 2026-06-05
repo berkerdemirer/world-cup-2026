@@ -51,6 +51,23 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         </div>
       </section>
 
+      <section>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Live updates
+        </h2>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Field
+            name="liveSyncSeconds"
+            label="Min seconds between API syncs"
+            value={settings.liveSyncSeconds}
+          />
+        </div>
+        <p className="mt-1 text-xs text-slate-400">
+          The live dashboard hits football-data.org at most once per this interval, no matter how
+          many players have the app open. 30s ≈ 2 calls/min.
+        </p>
+      </section>
+
       <div className="flex items-center gap-3">
         <button
           type="submit"

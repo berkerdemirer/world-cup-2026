@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/session";
 import { db } from "@/db";
 import { matches, teams, users } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import { getSettings } from "@/lib/scoring";
 import { SyncPanel } from "./sync-panel";
 
 async function count(table: typeof matches | typeof teams | typeof users): Promise<number> {
@@ -13,15 +14,24 @@ async function count(table: typeof matches | typeof teams | typeof users): Promi
 
 export default async function AdminPage() {
   await requireAdmin();
-  const [matchCount, teamCount, userCount] = await Promise.all([
+  const [matchCount, teamCount, userCount, settings] = await Promise.all([
     count(matches),
     count(teams),
     count(users),
+    getSettings(),
   ]);
+  const lastSynced = settings.lastSyncedAt
+    ? new Date(settings.lastSyncedAt).toLocaleString()
+    : "never";
 
   return (
     <AppShell>
-      <h1 className="mb-5 text-2xl font-bold text-slate-900">Admin</h1>
+      <div className="mb-5 flex items-baseline justify-between">
+        <h1 className="text-2xl font-bold text-slate-900">Admin</h1>
+        <span className="text-sm text-slate-500">
+          Last synced: <span className="font-medium text-slate-700">{lastSynced}</span>
+        </span>
+      </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat label="Matches" value={matchCount} />

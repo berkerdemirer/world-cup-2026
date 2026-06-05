@@ -1,7 +1,8 @@
 import "server-only";
+import { and, or, eq, lt, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { teams, matches, type Stage, type MatchStatus } from "@/db/schema";
-import { recomputeScores } from "@/lib/scoring";
+import { teams, matches, settings, type Stage, type MatchStatus } from "@/db/schema";
+import { recomputeScores, getSettings } from "@/lib/scoring";
 
 const BASE = "https://api.football-data.org/v4";
 const COMPETITION = "WC"; // FIFA World Cup
@@ -152,7 +153,6 @@ export async function syncMatches(): Promise<SyncResult> {
     const awayTeamId = await upsertTeam(m.awayTeam);
 
     const stage = normalizeStage(m.stage);
-    const finished = m.status === "FINISHED";
 
     const values = {
       id: m.id,
@@ -165,8 +165,10 @@ export async function syncMatches(): Promise<SyncResult> {
       awayPlaceholder: awayTeamId == null ? (m.awayTeam.name ?? null) : null,
       kickoffAt: new Date(m.utcDate),
       status: m.status as MatchStatus,
-      homeScore: finished ? m.score.fullTime.home ?? null : null,
-      awayScore: finished ? m.score.fullTime.away ?? null : null,
+      // Store the latest score even while IN_PLAY so the dashboard shows live
+      // scores. Points are only awarded for FINISHED matches (see recomputeScores).
+      homeScore: m.score.fullTime.home ?? null,
+      awayScore: m.score.fullTime.away ?? null,
       homePens: m.score.penalties?.home ?? null,
       awayPens: m.score.penalties?.away ?? null,
       advancingTeamId: advancingTeam(m),
@@ -203,6 +205,45 @@ export async function syncMatches(): Promise<SyncResult> {
   await recomputeScores();
 
   return { matchesSeen: data.matches.length, matchesUpdated: updated, manualSkipped };
+}
+
+export interface MaybeSyncResult {
+  synced: boolean;
+  lastSyncedAt: Date | null;
+}
+
+/**
+ * Globally-throttled sync for the live dashboard. The external API is called at
+ * most once per `liveSyncSeconds` no matter how many clients poll, because the
+ * sync slot is claimed with a single atomic compare-and-swap on `lastSyncedAt`:
+ * only the request whose UPDATE actually matches a row proceeds to hit the API;
+ * concurrent callers get zero rows back and just read the already-synced data.
+ */
+export async function maybeSync(): Promise<MaybeSyncResult> {
+  const s = await getSettings();
+  const intervalSec = s.liveSyncSeconds;
+
+  const claimed = await db
+    .update(settings)
+    .set({ lastSyncedAt: new Date() })
+    .where(
+      and(
+        eq(settings.id, 1),
+        or(
+          isNull(settings.lastSyncedAt),
+          lt(settings.lastSyncedAt, sql`now() - (${intervalSec} * interval '1 second')`),
+        ),
+      ),
+    )
+    .returning({ id: settings.id });
+
+  // Lost the race (or throttled) — return the existing data, no API call.
+  if (claimed.length === 0) {
+    return { synced: false, lastSyncedAt: s.lastSyncedAt };
+  }
+
+  await syncMatches();
+  return { synced: true, lastSyncedAt: new Date() };
 }
 
 /** Light connectivity check used by the admin panel. */

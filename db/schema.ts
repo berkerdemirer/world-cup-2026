@@ -140,6 +140,10 @@ export const settings = pgTable("settings", {
   ptsBracketFinal: integer("pts_bracket_final").notNull().default(8),
   ptsBracketWinner: integer("pts_bracket_winner").notNull().default(12),
   bracketLockAt: timestamp("bracket_lock_at", { withTimezone: true }), // null = derive from first LAST_32 kickoff
+  // Live-sync throttle: a single shared clock so the external API is called at
+  // most once per `liveSyncSeconds`, regardless of how many clients are polling.
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  liveSyncSeconds: integer("live_sync_seconds").notNull().default(30),
 });
 
 export type User = typeof users.$inferSelect;

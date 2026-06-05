@@ -76,6 +76,18 @@ Postgres · iron-session · Zod. Deploys to Vercel.
    (cron-job.org / a GitHub Actions cron) at
    `https://<your-app>/api/cron/sync?secret=<CRON_SECRET>` every ~10 minutes.
 
+## Live updates
+
+The dashboard and leaderboard refresh themselves while open and pull live scores
+without anyone clicking anything. Crucially, the football-data.org call is
+**throttled globally in the database**, not per browser: every open client polls
+`/api/live`, but the upstream API is hit **at most once per `liveSyncSeconds`**
+(default 30s, set in Admin → Scoring settings) thanks to an atomic
+compare-and-swap on a shared `lastSyncedAt` timestamp. So 1 player or 50 players
+with the app open produces the same ~2 calls/minute — well within the paid tier's
+20 calls/min. In-play scores are stored as they update, but points are only
+awarded once a match is `FINISHED`.
+
 ## How scoring works
 
 **Match (per finished game)** — the single highest matching tier is awarded:
