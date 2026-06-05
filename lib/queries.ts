@@ -1,0 +1,138 @@
+import "server-only";
+import { asc, eq, desc } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  matches,
+  teams,
+  scores,
+  users,
+  scorePredictions,
+  bracketPredictions,
+  type Match,
+  type Team,
+  type BracketRound,
+} from "@/db/schema";
+
+export interface MatchWithTeams extends Match {
+  homeTeam: Team | null;
+  awayTeam: Team | null;
+}
+
+/** All matches ordered by kickoff, with home/away team rows joined in. */
+export async function getMatchesWithTeams(): Promise<MatchWithTeams[]> {
+  const rows = await db.select().from(matches).orderBy(asc(matches.kickoffAt));
+  const teamRows = await db.select().from(teams);
+  const teamById = new Map(teamRows.map((t) => [t.id, t] as const));
+  return rows.map((m) => ({
+    ...m,
+    homeTeam: m.homeTeamId != null ? teamById.get(m.homeTeamId) ?? null : null,
+    awayTeam: m.awayTeamId != null ? teamById.get(m.awayTeamId) ?? null : null,
+  }));
+}
+
+export async function getMatchWithTeams(id: number): Promise<MatchWithTeams | null> {
+  const [m] = await db.select().from(matches).where(eq(matches.id, id)).limit(1);
+  if (!m) return null;
+  const teamRows = await db.select().from(teams);
+  const teamById = new Map(teamRows.map((t) => [t.id, t] as const));
+  return {
+    ...m,
+    homeTeam: m.homeTeamId != null ? teamById.get(m.homeTeamId) ?? null : null,
+    awayTeam: m.awayTeamId != null ? teamById.get(m.awayTeamId) ?? null : null,
+  };
+}
+
+export async function getUserScorePredictions(
+  userId: string,
+): Promise<Map<number, { homeScore: number; awayScore: number }>> {
+  const rows = await db
+    .select()
+    .from(scorePredictions)
+    .where(eq(scorePredictions.userId, userId));
+  return new Map(rows.map((r) => [r.matchId, { homeScore: r.homeScore, awayScore: r.awayScore }]));
+}
+
+export interface LeaderboardRow {
+  userId: string;
+  displayName: string;
+  totalPoints: number;
+  matchPoints: number;
+  bracketPoints: number;
+  exactCount: number;
+  rank: number;
+}
+
+/** Leaderboard ordered by total, then exact count, then join time. */
+export async function getLeaderboard(): Promise<LeaderboardRow[]> {
+  const rows = await db
+    .select({
+      userId: users.id,
+      displayName: users.displayName,
+      createdAt: users.createdAt,
+      totalPoints: scores.totalPoints,
+      matchPoints: scores.matchPoints,
+      bracketPoints: scores.bracketPoints,
+      exactCount: scores.exactCount,
+    })
+    .from(users)
+    .leftJoin(scores, eq(scores.userId, users.id))
+    .orderBy(
+      desc(scores.totalPoints),
+      desc(scores.exactCount),
+      asc(users.createdAt),
+    );
+
+  return rows.map((r, i) => ({
+    userId: r.userId,
+    displayName: r.displayName,
+    totalPoints: r.totalPoints ?? 0,
+    matchPoints: r.matchPoints ?? 0,
+    bracketPoints: r.bracketPoints ?? 0,
+    exactCount: r.exactCount ?? 0,
+    rank: i + 1,
+  }));
+}
+
+export interface MatchPredictionRow {
+  displayName: string;
+  homeScore: number;
+  awayScore: number;
+}
+
+/** Everyone's score predictions for one match (only reveal after kickoff). */
+export async function getMatchPredictions(matchId: number): Promise<MatchPredictionRow[]> {
+  return db
+    .select({
+      displayName: users.displayName,
+      homeScore: scorePredictions.homeScore,
+      awayScore: scorePredictions.awayScore,
+    })
+    .from(scorePredictions)
+    .innerJoin(users, eq(users.id, scorePredictions.userId))
+    .where(eq(scorePredictions.matchId, matchId))
+    .orderBy(asc(users.displayName));
+}
+
+export function isMatchLocked(m: Pick<Match, "kickoffAt" | "status">): boolean {
+  if (m.status !== "SCHEDULED" && m.status !== "TIMED") return true;
+  return Date.now() >= new Date(m.kickoffAt).getTime();
+}
+
+export async function getAllTeams(): Promise<Team[]> {
+  return db.select().from(teams).orderBy(asc(teams.groupLabel), asc(teams.name));
+}
+
+/** The user's bracket picks grouped by round: round -> picked team ids. */
+export async function getUserBracketPicks(
+  userId: string,
+): Promise<Record<BracketRound, number[]>> {
+  const rows = await db
+    .select()
+    .from(bracketPredictions)
+    .where(eq(bracketPredictions.userId, userId));
+  const out: Partial<Record<BracketRound, number[]>> = {};
+  for (const r of rows) {
+    (out[r.round] ??= []).push(r.pickedTeamId);
+  }
+  return out as Record<BracketRound, number[]>;
+}
