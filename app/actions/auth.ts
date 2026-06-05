@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { users, scores } from "@/db/schema";
 import { getSession } from "@/lib/session";
+import { verifyRoomPassword } from "@/lib/room";
 
 const loginSchema = z.object({
   displayName: z.string().trim().min(2, "Name must be at least 2 characters").max(40),
@@ -16,6 +17,7 @@ const loginSchema = z.object({
     .regex(/^\d{4,8}$/u, "PIN must be 4–8 digits")
     .optional()
     .or(z.literal("")),
+  roomPassword: z.string().optional(),
 });
 
 export type LoginState = { error?: string };
@@ -24,9 +26,16 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const parsed = loginSchema.safeParse({
     displayName: formData.get("displayName"),
     pin: formData.get("pin") ?? "",
+    roomPassword: formData.get("roomPassword") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  // Shared room-password gate — checked before anything else so randoms can't
+  // even create an account.
+  if (!(await verifyRoomPassword(parsed.data.roomPassword))) {
+    return { error: "Incorrect room password." };
   }
 
   const { displayName } = parsed.data;

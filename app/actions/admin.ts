@@ -116,6 +116,35 @@ export async function adminUpdateSettings(
   return { ok: true, message: "Scoring updated and leaderboard recomputed." };
 }
 
+export async function adminSetRoomPassword(
+  _prev: AdminActionResult,
+  formData: FormData,
+): Promise<AdminActionResult> {
+  await requireAdmin();
+  const raw = String(formData.get("roomPassword") ?? "").trim();
+  const clear = formData.get("clear") === "1";
+
+  if (clear) {
+    await db
+      .insert(settings)
+      .values({ id: 1, roomPasswordHash: null })
+      .onConflictDoUpdate({ target: settings.id, set: { roomPasswordHash: null } });
+    revalidatePath("/admin/settings");
+    return { ok: true, message: "Room password removed — the room is open." };
+  }
+
+  if (raw.length < 4) {
+    return { ok: false, error: "Room password must be at least 4 characters." };
+  }
+  const roomPasswordHash = await bcrypt.hash(raw, 10);
+  await db
+    .insert(settings)
+    .values({ id: 1, roomPasswordHash })
+    .onConflictDoUpdate({ target: settings.id, set: { roomPasswordHash } });
+  revalidatePath("/admin/settings");
+  return { ok: true, message: "Room password set. New players now need it to join." };
+}
+
 export async function adminToggleAdmin(userId: string, makeAdmin: boolean): Promise<AdminActionResult> {
   await requireAdmin();
   await db.update(users).set({ isAdmin: makeAdmin }).where(eq(users.id, userId));

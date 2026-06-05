@@ -15,6 +15,13 @@
       "when": 1780656886888,
       "tag": "0001_foamy_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780657593127,
+      "tag": "0002_chunky_namora",
+      "breakpoints": true
     }
   ]
 }

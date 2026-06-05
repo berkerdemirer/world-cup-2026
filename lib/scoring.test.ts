@@ -22,6 +22,7 @@ const settings: Settings = {
   bracketLockAt: null,
   lastSyncedAt: null,
   liveSyncSeconds: 30,
+  roomPasswordHash: null,
 };
 
 test("scoreTier: exact match", () => {

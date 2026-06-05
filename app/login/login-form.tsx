@@ -5,7 +5,7 @@ import { login, type LoginState } from "@/app/actions/auth";
 
 const initial: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ roomRequired = false }: { roomRequired?: boolean }) {
   const [state, formAction, pending] = useActionState(login, initial);
 
   return (
@@ -38,6 +38,22 @@ export function LoginForm() {
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500"
         />
       </div>
+      {roomRequired && (
+        <div>
+          <label htmlFor="roomPassword" className="mb-1 block text-sm font-medium text-slate-700">
+            Room password
+          </label>
+          <input
+            id="roomPassword"
+            name="roomPassword"
+            type="password"
+            required
+            autoComplete="off"
+            placeholder="shared code from the organiser"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500"
+          />
+        </div>
+      )}
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
