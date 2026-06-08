@@ -52,7 +52,7 @@ export default async function HowToPlayPage() {
           pill={<TierPill cls="bg-line text-ink" pts={s.ptsOutcome} label="Result" />}
           title="Right result"
           desc="Correct winner or draw, but missed the margin."
-          example="Predicted 3–0, final was 1–0."
+          example="Predicted 3–0, final was 1–0 — or a draw you called wrong, like 1–1 finishing 2–2."
         />
         <TierRow
           pill={<TierPill cls="bg-line/70 text-muted-foreground" pts={0} label="Miss" />}
