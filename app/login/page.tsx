@@ -6,21 +6,21 @@ import { LoginForm } from "./login-form";
 export default async function LoginPage() {
   const user = await getCurrentUser();
   if (user) redirect("/");
+
   const roomRequired = await isRoomGated();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <main className="dotted-bg flex min-h-screen items-center justify-center bg-cream p-6">
+      <div className="w-full max-w-sm rounded-3xl bg-card p-8 shadow-sm ring-1 ring-black/5">
         <div className="mb-6 text-center">
-          <div className="text-4xl">🏆</div>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">World Cup 2026</h1>
-          <p className="text-sm text-slate-500">Prediction game — pick scores &amp; bracket</p>
+          <h1 className="display text-3xl uppercase tracking-wide text-ink">Turnit World Cup 2026</h1>
+          <p className="text-sm text-muted-foreground">World Cup &rsquo;26 prediction pool</p>
         </div>
         <LoginForm roomRequired={roomRequired} />
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-muted-foreground">
           {roomRequired
-            ? "Ask the organiser for the room password. Add a PIN to protect your name."
-            : "New here? Just enter a name to join. Add a PIN to protect it."}
+            ? "Enter the room key from the organiser, then pick a name and a PIN to protect it."
+            : "New here? Pick a name and a PIN to join — you'll need both to sign back in."}
         </p>
       </div>
     </main>

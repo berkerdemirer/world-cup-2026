@@ -110,3 +110,21 @@ export async function submitBracketPicks(
   revalidatePath("/predict/bracket");
   return { ok: true };
 }
+
+/** Clear all of the user's bracket picks across every round. */
+export async function resetBracketPicks(): Promise<ActionResult> {
+  const session = await requireUser();
+
+  const settings = await getSettings();
+  try {
+    assertBracketOpen(await getBracketLockAt(settings));
+  } catch (e) {
+    if (e instanceof LockedError) return { ok: false, error: e.message };
+    throw e;
+  }
+
+  await db.delete(bracketPredictions).where(eq(bracketPredictions.userId, session.userId));
+
+  revalidatePath("/predict/bracket");
+  return { ok: true };
+}

@@ -1,16 +1,10 @@
 import { AppShell } from "@/components/app-shell";
+import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/session";
 import { getAllTeams, getUserBracketPicks } from "@/lib/queries";
 import { getSettings, getBracketLockAt, isBracketLocked } from "@/lib/scoring";
+import { Lock } from "lucide-react";
 import { BracketPicker, type RoundConfig } from "./bracket-picker";
-
-const ROUNDS: RoundConfig[] = [
-  { round: "WINNER", label: "🏆 Champion", pick: 1 },
-  { round: "FINAL", label: "Finalists", pick: 2 },
-  { round: "SEMI_FINALS", label: "Semi-finalists", pick: 4 },
-  { round: "QUARTER_FINALS", label: "Quarter-finalists", pick: 8 },
-  { round: "LAST_16", label: "Round of 16", pick: 16 },
-];
 
 export default async function BracketPage() {
   const session = await requireUser();
@@ -22,30 +16,55 @@ export default async function BracketPage() {
   const lockAt = await getBracketLockAt(settings);
   const locked = isBracketLocked(lockAt);
 
+  const rounds: RoundConfig[] = [
+    { round: "LAST_16", label: "Round of 16", pick: 16, points: settings.ptsBracketR16 },
+    { round: "QUARTER_FINALS", label: "Quarter-finalists", pick: 8, points: settings.ptsBracketQf },
+    { round: "SEMI_FINALS", label: "Semi-finalists", pick: 4, points: settings.ptsBracketSf },
+    { round: "FINAL", label: "Finalists", pick: 2, points: settings.ptsBracketFinal },
+    { round: "WINNER", label: "Champion", pick: 1, points: settings.ptsBracketWinner },
+  ];
+
   return (
     <AppShell>
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-900">Bracket</h1>
-        <p className="text-sm text-slate-500">
-          Pick which teams reach each round. Points escalate: R16 {settings.ptsBracketR16} ·
-          QF {settings.ptsBracketQf} · SF {settings.ptsBracketSf} · Final {settings.ptsBracketFinal} ·
-          Champion {settings.ptsBracketWinner}.
-        </p>
-        {lockAt && (
-          <p className="mt-1 text-sm font-medium text-slate-600">
-            {locked
-              ? "🔒 Bracket locked — the knockout stage has begun."
-              : `Locks at ${lockAt.toLocaleString()} (knockout kickoff).`}
-          </p>
-        )}
-      </div>
+      <PageHeader
+        title="Bracket"
+        subtitle="Pick which teams reach each round. Later rounds score more per correct team."
+      />
+
+      {lockAt && (
+        <div
+          className={`mb-6 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-medium ${
+            locked
+              ? "bg-ink text-white"
+              : "bg-amber-50 text-amber-900 ring-1 ring-amber-200"
+          }`}
+        >
+          <Lock className="size-4 shrink-0" />
+          {locked ? (
+            <span>Bracket locked — the knockout stage has begun.</span>
+          ) : (
+            <span>
+              Picks lock on{" "}
+              <span className="font-bold">
+                {lockAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at{" "}
+                {lockAt.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })}
+              </span>{" "}
+              (knockout kickoff). Make your picks before then.
+            </span>
+          )}
+        </div>
+      )}
 
       {teams.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+        <div className="rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center text-muted-foreground">
           No teams loaded yet. An admin needs to run a data sync first.
         </div>
       ) : (
-        <BracketPicker rounds={ROUNDS} teams={teams} initialPicks={picks} locked={locked} />
+        <BracketPicker rounds={rounds} teams={teams} initialPicks={picks} locked={locked} />
       )}
     </AppShell>
   );

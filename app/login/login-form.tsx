@@ -26,13 +26,17 @@ export function LoginForm({ roomRequired = false }: { roomRequired?: boolean }) 
       </div>
       <div>
         <label htmlFor="pin" className="mb-1 block text-sm font-medium text-slate-700">
-          PIN <span className="text-slate-400">(optional, 4–8 digits)</span>
+          PIN <span className="text-slate-400">(required, 4–8 digits)</span>
         </label>
         <input
           id="pin"
           name="pin"
           type="password"
           inputMode="numeric"
+          required
+          minLength={4}
+          maxLength={8}
+          pattern="\d{4,8}"
           autoComplete="current-password"
           placeholder="••••"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500"
@@ -41,15 +45,15 @@ export function LoginForm({ roomRequired = false }: { roomRequired?: boolean }) 
       {roomRequired && (
         <div>
           <label htmlFor="roomPassword" className="mb-1 block text-sm font-medium text-slate-700">
-            Room password
+            Room key
           </label>
           <input
             id="roomPassword"
             name="roomPassword"
-            type="password"
+            type="text"
             required
             autoComplete="off"
-            placeholder="shared code from the organiser"
+            placeholder="shared key from the organiser"
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500"
           />
         </div>

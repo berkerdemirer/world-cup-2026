@@ -5,23 +5,26 @@ import { getSettings } from "@/lib/scoring";
 /**
  * Shared "room password" gate. A password set in the admin settings takes
  * precedence; otherwise a ROOM_PASSWORD env var can act as a bootstrap/fallback.
- * If neither is configured the room is open (no gate).
+ * The room key is always mandatory, so the gate is always shown.
  */
 export async function isRoomGated(): Promise<boolean> {
-  const s = await getSettings();
-  return !!s.roomPasswordHash || !!process.env.ROOM_PASSWORD;
+  return true;
 }
 
-/** Returns true if the supplied password opens the room (always true when ungated). */
+/**
+ * Returns true only if the supplied password opens the room. When no room key
+ * is configured (admin setting or ROOM_PASSWORD env), the room stays closed —
+ * the key is mandatory, never silently open.
+ */
 export async function verifyRoomPassword(password: string | undefined): Promise<boolean> {
+  if (!password) return false;
   const s = await getSettings();
   if (s.roomPasswordHash) {
-    if (!password) return false;
     return bcrypt.compare(password, s.roomPasswordHash);
   }
   const env = process.env.ROOM_PASSWORD;
   if (env) {
-    return !!password && password === env;
+    return password === env;
   }
-  return true; // no gate configured
+  return false; // no gate configured — nobody gets in until a room key is set
 }

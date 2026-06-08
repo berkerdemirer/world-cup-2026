@@ -14,10 +14,8 @@ const loginSchema = z.object({
   pin: z
     .string()
     .trim()
-    .regex(/^\d{4,8}$/u, "PIN must be 4–8 digits")
-    .optional()
-    .or(z.literal("")),
-  roomPassword: z.string().optional(),
+    .regex(/^\d{4,8}$/u, "PIN must be 4–8 digits"),
+  roomPassword: z.string().trim().min(1, "Room key is required"),
 });
 
 export type LoginState = { error?: string };
@@ -35,11 +33,10 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   // Shared room-password gate — checked before anything else so randoms can't
   // even create an account.
   if (!(await verifyRoomPassword(parsed.data.roomPassword))) {
-    return { error: "Incorrect room password." };
+    return { error: "Incorrect room key." };
   }
 
-  const { displayName } = parsed.data;
-  const pin = parsed.data.pin && parsed.data.pin.length > 0 ? parsed.data.pin : undefined;
+  const { displayName, pin } = parsed.data;
 
   const [existing] = await db
     .select()
@@ -50,23 +47,17 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   let user = existing;
 
   if (!user) {
-    // First time: create the player. Any provided PIN is set on the account.
-    const pinHash = pin ? await bcrypt.hash(pin, 10) : null;
+    // First time: create the player with their PIN.
+    const pinHash = await bcrypt.hash(pin, 10);
     const [created] = await db
       .insert(users)
       .values({ displayName, pinHash })
       .returning();
     user = created;
     await db.insert(scores).values({ userId: user.id }).onConflictDoNothing();
-  } else if (user.pinHash) {
-    // Account is PIN-protected — require a matching PIN.
-    if (!pin || !(await bcrypt.compare(pin, user.pinHash))) {
-      return { error: "Incorrect PIN for this name." };
-    }
-  } else if (pin) {
-    // No PIN set yet and one was provided — adopt it for future logins.
-    const pinHash = await bcrypt.hash(pin, 10);
-    await db.update(users).set({ pinHash }).where(eq(users.id, user.id));
+  } else if (!user.pinHash || !(await bcrypt.compare(pin, user.pinHash))) {
+    // Existing account — the PIN must match the one set at registration.
+    return { error: "Incorrect PIN for this name." };
   }
 
   const session = await getSession();

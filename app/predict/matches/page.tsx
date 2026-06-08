@@ -6,56 +6,96 @@ import {
   isMatchLocked,
   type MatchWithTeams,
 } from "@/lib/queries";
-import { stageGroupHeading } from "@/lib/format";
-import { MatchRow } from "./match-row";
+import { getSettings } from "@/lib/scoring";
+import { STAGE_LABELS } from "@/lib/format";
+import { PageHeader } from "@/components/page-header";
+import { MatchTable, type MatchPoints } from "./match-table";
+import Link from "next/link";
+import { BookOpen } from "lucide-react";
 
-export default async function PredictMatchesPage() {
+type FixtureSection = { key: string; label: string; matches: MatchWithTeams[] };
+
+/** Group-stage matches are grouped by calendar day; knockout matches by round. */
+function sectionOf(m: MatchWithTeams): { key: string; label: string } {
+  if (m.stage === "GROUP_STAGE") {
+    const d = new Date(m.kickoffAt);
+    const key = `d${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return { key, label };
+  }
+  return { key: m.stage, label: STAGE_LABELS[m.stage] };
+}
+
+export default async function FixturesPage() {
   const session = await requireUser();
-  const [allMatches, predictions] = await Promise.all([
+  const [allMatches, predictions, settings] = await Promise.all([
     getMatchesWithTeams(),
     getUserScorePredictions(session.userId),
+    getSettings(),
   ]);
 
-  // Group consecutive matches under a stage/group/matchday heading.
-  const groups: { heading: string; matches: MatchWithTeams[] }[] = [];
+  const points: MatchPoints = {
+    exact: settings.ptsExact,
+    goalDiff: settings.ptsGoalDiff,
+    outcome: settings.ptsOutcome,
+  };
+
+  // Build ordered, de-duplicated sections (matches arrive sorted by kickoff).
+  const sections: FixtureSection[] = [];
+  const byKey = new Map<string, FixtureSection>();
   for (const m of allMatches) {
-    const heading = stageGroupHeading(m.stage, m.groupLabel, m.matchday);
-    const last = groups[groups.length - 1];
-    if (last && last.heading === heading) last.matches.push(m);
-    else groups.push({ heading, matches: [m] });
+    const { key, label } = sectionOf(m);
+    let s = byKey.get(key);
+    if (!s) {
+      s = { key, label, matches: [] };
+      byKey.set(key, s);
+      sections.push(s);
+    }
+    s.matches.push(m);
   }
+
+  const totalOpen = allMatches.filter((m) => !isMatchLocked(m)).length;
 
   return (
     <AppShell>
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-900">Predict Scores</h1>
-        <p className="text-sm text-slate-500">
-          Each match locks at kickoff. Exact 4 · goal difference 3 · correct result 2.
-        </p>
-      </div>
+      <PageHeader
+        title="Fixtures"
+        subtitle={
+          sections.length === 0
+            ? "No fixtures loaded yet"
+            : `All ${allMatches.length} matches · ${
+                totalOpen > 0 ? `${totalOpen} open for predictions` : "all locked"
+              }`
+        }
+        right={
+          <Link
+            href="/how-to-play"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-card px-3.5 py-2 text-sm font-semibold text-ink shadow-sm ring-1 ring-black/5 transition-colors hover:bg-line/50"
+          >
+            <BookOpen className="size-4" strokeWidth={2.25} />
+            Rules
+          </Link>
+        }
+      />
 
-      {allMatches.length === 0 ? (
+      {sections.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="space-y-6">
-          {groups.map((g, i) => (
-            <section key={i}>
-              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                {g.heading}
-              </h2>
-              <div className="space-y-2">
-                {g.matches.map((m) => (
-                  <MatchRow
-                    key={m.id}
-                    match={m}
-                    locked={isMatchLocked(m)}
-                    prediction={predictions.get(m.id)}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        <MatchTable
+          sections={sections.map((s) => ({
+            key: s.key,
+            label: s.label,
+            openCount: s.matches.filter((m) => !isMatchLocked(m)).length,
+            rows: s.matches.map((m) => ({
+              match: m,
+              prediction: predictions.get(m.id) ?? null,
+              locked: isMatchLocked(m),
+            })),
+          }))}
+          points={points}
+        />
       )}
     </AppShell>
   );
@@ -63,9 +103,9 @@ export default async function PredictMatchesPage() {
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+    <div className="rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center text-muted-foreground">
       No fixtures loaded yet. An admin needs to run a data sync from the{" "}
-      <span className="font-medium">Admin → Sync</span> panel.
+      <span className="font-medium text-ink">Admin → Sync</span> panel.
     </div>
   );
 }
