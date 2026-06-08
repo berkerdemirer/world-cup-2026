@@ -88,6 +88,19 @@ test("getBracketLockAt derives from the first LAST_32 kickoff when unset", async
   assert.equal(derived.getTime(), firstKnockout.getTime(), "uses the earliest LAST_32 kickoff");
 });
 
+test("getBracketLockAt falls back to the earliest knockout of any stage", async () => {
+  const s = await getSettings();
+  // No LAST_32 in the feed — the lock must still derive from the next knockout
+  // round rather than silently staying open forever.
+  const firstKnockout = new Date("2026-07-05T18:00:00Z");
+  await seedMatch({ id: 510, stage: "QUARTER_FINALS", status: "SCHEDULED", kickoffAt: new Date("2026-07-10T18:00:00Z") });
+  await seedMatch({ id: 511, stage: "LAST_16", status: "SCHEDULED", kickoffAt: firstKnockout });
+
+  const derived = await getBracketLockAt(s);
+  assert.ok(derived);
+  assert.equal(derived.getTime(), firstKnockout.getTime(), "uses the earliest knockout kickoff");
+});
+
 test("getBracketLockAt prefers an explicit setting over the derived time", async () => {
   const explicit = new Date("2026-06-20T00:00:00Z");
   await setSettings({ bracketLockAt: explicit });

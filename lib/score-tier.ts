@@ -17,11 +17,14 @@ export function scoreTier(
   const predDiff = predHome - predAway;
   const actualDiff = actualHome - actualAway;
 
-  // Correct goal difference: same margin AND same winner (covers draws of a
-  // different scoreline, since both diffs are 0).
-  if (predDiff === actualDiff) return "goal_diff";
+  // Correct goal difference: same winner AND same margin. Draws are excluded
+  // here (actualDiff === 0) — a draw has no winning margin to call, so a correct
+  // but wrong-scoreline draw falls to the "outcome" tier below, keeping it
+  // symmetric with a wrong-margin win.
+  if (actualDiff !== 0 && predDiff === actualDiff) return "goal_diff";
 
-  // Correct outcome (tendency): right side wins / right draw, wrong margin.
+  // Correct outcome (tendency): right side wins, or a correctly-called draw with
+  // the wrong scoreline.
   if (Math.sign(predDiff) === Math.sign(actualDiff)) return "outcome";
 
   return "none";

@@ -54,8 +54,10 @@ export async function submitScorePrediction(
 }
 
 const bracketSchema = z.object({
+  // The bracket game starts at the Round of 16. LAST_32 is intentionally not a
+  // pickable round, so it is excluded here — otherwise a direct call could farm
+  // points for a round no one can see or contest.
   round: z.enum([
-    "LAST_32",
     "LAST_16",
     "QUARTER_FINALS",
     "SEMI_FINALS",
@@ -66,6 +68,21 @@ const bracketSchema = z.object({
   teamIds: z.array(z.coerce.number().int().positive()),
 });
 
+/**
+ * Maximum teams a player may pick per round — i.e. how many teams actually
+ * reach that round. Enforced server-side so the client UI's limit can't be
+ * bypassed by calling the action directly (which would otherwise let someone
+ * pick every team and bank every team that advances).
+ */
+const ROUND_PICK_LIMIT: Record<BracketRound, number> = {
+  LAST_32: 32,
+  LAST_16: 16,
+  QUARTER_FINALS: 8,
+  SEMI_FINALS: 4,
+  FINAL: 2,
+  WINNER: 1,
+};
+
 /** Replace the user's picks for a single round (whole round committed at once). */
 export async function submitBracketPicks(
   round: BracketRound,
@@ -75,6 +92,12 @@ export async function submitBracketPicks(
   const parsed = bracketSchema.safeParse({ round, teamIds });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const unique = [...new Set(parsed.data.teamIds)];
+  const limit = ROUND_PICK_LIMIT[parsed.data.round];
+  if (unique.length > limit) {
+    return { ok: false, error: `Pick at most ${limit} team${limit === 1 ? "" : "s"} for this round.` };
   }
 
   const settings = await getSettings();
@@ -95,7 +118,6 @@ export async function submitBracketPicks(
       ),
     );
 
-  const unique = [...new Set(parsed.data.teamIds)];
   if (unique.length > 0) {
     await db.insert(bracketPredictions).values(
       unique.map((teamId, i) => ({

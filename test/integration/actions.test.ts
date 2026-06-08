@@ -153,6 +153,60 @@ test("submitBracketPicks replaces the round and de-duplicates team ids", async (
   assert.equal(after[0].pickedTeamId, 3);
 });
 
+test("submitBracketPicks rejects more teams than the round allows", async () => {
+  await Promise.all([seedTeam(1), seedTeam(2), seedTeam(3)]);
+
+  // WINNER permits exactly one team; three must be refused outright.
+  const res = await submitBracketPicks("WINNER", [1, 2, 3]);
+  assert.equal(res.ok, false);
+  assert.match(res.error ?? "", /at most 1 team/i);
+
+  const picks = await db.select().from(bracketPredictions);
+  assert.equal(picks.length, 0, "an over-limit submission writes nothing");
+});
+
+test("submitBracketPicks enforces the limit after de-duplication", async () => {
+  await Promise.all([seedTeam(1), seedTeam(2)]);
+
+  // FINAL allows two teams; [1,1,2] dedupes to two and is accepted.
+  const ok = await submitBracketPicks("FINAL", [1, 1, 2]);
+  assert.deepEqual(ok, { ok: true });
+
+  // Three distinct teams for FINAL exceeds the limit of two.
+  await seedTeam(3);
+  const tooMany = await submitBracketPicks("FINAL", [1, 2, 3]);
+  assert.equal(tooMany.ok, false);
+  assert.match(tooMany.error ?? "", /at most 2 teams/i);
+
+  // The earlier valid set is untouched by the rejected call.
+  const picks = await db
+    .select()
+    .from(bracketPredictions)
+    .where(eq(bracketPredictions.round, "FINAL"));
+  assert.equal(picks.length, 2);
+  assert.deepEqual(picks.map((p) => p.pickedTeamId).sort((a, b) => a - b), [1, 2]);
+});
+
+test("submitBracketPicks accepts exactly the round limit", async () => {
+  await Promise.all([seedTeam(1), seedTeam(2)]);
+  const res = await submitBracketPicks("FINAL", [1, 2]);
+  assert.deepEqual(res, { ok: true });
+  const picks = await db.select().from(bracketPredictions);
+  assert.equal(picks.length, 2);
+});
+
+test("submitBracketPicks refuses the non-playable LAST_32 round", async () => {
+  await seedTeam(1);
+  // LAST_32 isn't a pickable round; submitting it directly must be rejected so
+  // it can't be used to farm points outside the visible bracket.
+  const res = await submitBracketPicks("LAST_32", [1]);
+  assert.equal(res.ok, false);
+  assert.ok(res.error);
+
+  const picks = await db.select().from(bracketPredictions);
+  assert.equal(picks.length, 0);
+});
+
 test("submitBracketPicks is rejected once the bracket is locked", async () => {
   await seedTeam(1);
   await setSettings({ bracketLockAt: new Date(Date.now() - HOUR) });

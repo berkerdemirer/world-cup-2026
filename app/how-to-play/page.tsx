@@ -46,7 +46,7 @@ export default async function HowToPlayPage() {
           pill={<TierPill cls="bg-royal text-white" pts={s.ptsGoalDiff} label="+GD" />}
           title="Goal difference"
           desc="Right winner and right margin, wrong scoreline."
-          example="Predicted 2–0, final was 1–0."
+          example="Predicted 2–1, final was 3–2."
         />
         <TierRow
           pill={<TierPill cls="bg-line text-ink" pts={s.ptsOutcome} label="Result" />}
@@ -61,6 +61,11 @@ export default async function HowToPlayPage() {
           example="Predicted a home win, the away side won."
         />
       </div>
+      <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+        <span className="font-semibold uppercase tracking-wide">Note</span> Knockout matches are
+        scored on the final result <span className="font-semibold text-ink">including extra time</span>{" "}
+        — penalty shoot-outs don&rsquo;t count toward the score.
+      </p>
 
       {/* Bracket scoring */}
       <SectionLabel>Bracket</SectionLabel>

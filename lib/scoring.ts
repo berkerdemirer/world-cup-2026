@@ -1,4 +1,4 @@
-import { eq, sql as dsql } from "drizzle-orm";
+import { eq, inArray, sql as dsql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   matches,
@@ -84,13 +84,27 @@ export function assertBracketOpen(lockAt: Date | null): void {
   }
 }
 
-/** Effective bracket lock time: explicit setting, else first LAST_32 kickoff. */
+/**
+ * Effective bracket lock time: an explicit admin setting wins; otherwise it is
+ * the earliest kickoff of any knockout match. Falling back to *all* knockout
+ * stages (not just LAST_32) means the lock still fires if the feed labels the
+ * first round differently or hasn't scheduled it yet — it can never silently
+ * stay open once knockout fixtures exist.
+ */
 export async function getBracketLockAt(s: Settings): Promise<Date | null> {
   if (s.bracketLockAt) return new Date(s.bracketLockAt);
   const [first] = await db
     .select({ kickoffAt: matches.kickoffAt })
     .from(matches)
-    .where(eq(matches.stage, "LAST_32"))
+    .where(
+      inArray(matches.stage, [
+        "LAST_32",
+        "LAST_16",
+        "QUARTER_FINALS",
+        "SEMI_FINALS",
+        "FINAL",
+      ]),
+    )
     .orderBy(matches.kickoffAt)
     .limit(1);
   return first ? new Date(first.kickoffAt) : null;

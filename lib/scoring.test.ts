@@ -32,12 +32,16 @@ test("scoreTier: exact match", () => {
 
 test("scoreTier: correct goal difference (non-exact)", () => {
   assert.equal(scoreTier(2, 1, 3, 2), "goal_diff"); // both +1 home
-  assert.equal(scoreTier(1, 1, 2, 2), "goal_diff"); // both draws, different score
+  assert.equal(scoreTier(0, 1, 1, 2), "goal_diff"); // both -1 away, different score
 });
 
 test("scoreTier: correct outcome only", () => {
   assert.equal(scoreTier(1, 0, 3, 0), "outcome"); // home win, wrong margin
   assert.equal(scoreTier(0, 1, 0, 3), "outcome"); // away win, wrong margin
+  // A correctly-called draw with the wrong scoreline is "outcome", not goal_diff
+  // (a draw has no winning margin to reward).
+  assert.equal(scoreTier(1, 1, 2, 2), "outcome");
+  assert.equal(scoreTier(0, 0, 1, 1), "outcome");
 });
 
 test("scoreTier: wrong", () => {

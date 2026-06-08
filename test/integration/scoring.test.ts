@@ -52,22 +52,23 @@ test("recomputeScores awards match points by tier and counts exacts", async () =
   await seedScorePrediction(a.id, 1, 2, 0); // exact
   await seedScorePrediction(b.id, 1, 1, 0); // outcome (home win, wrong margin)
   await seedScorePrediction(c.id, 1, 0, 1); // none (predicted away win)
-  // Match 2 (actual 1-1 draw)
-  await seedScorePrediction(a.id, 2, 0, 0); // goal_diff (draw)
-  await seedScorePrediction(b.id, 2, 2, 2); // goal_diff (draw)
+  // Match 2 (actual 1-1 draw) — a correct-but-wrong-score draw scores at the
+  // outcome tier, not goal_diff (a draw has no winning margin to reward).
+  await seedScorePrediction(a.id, 2, 0, 0); // outcome (draw, wrong score)
+  await seedScorePrediction(b.id, 2, 2, 2); // outcome (draw, wrong score)
   // Match 3 not finished
   await seedScorePrediction(a.id, 3, 1, 0); // ignored
 
   await recomputeScores();
 
   const sa = await scoreFor(a.id);
-  assert.equal(sa.matchPoints, 4 + 3, "exact + goal_diff");
+  assert.equal(sa.matchPoints, 4 + 2, "exact + outcome");
   assert.equal(sa.exactCount, 1);
   assert.equal(sa.bracketPoints, 0);
-  assert.equal(sa.totalPoints, 7);
+  assert.equal(sa.totalPoints, 6);
 
   const sb = await scoreFor(b.id);
-  assert.equal(sb.matchPoints, 2 + 3, "outcome + goal_diff");
+  assert.equal(sb.matchPoints, 2 + 2, "outcome + outcome");
   assert.equal(sb.exactCount, 0);
 
   const sc = await scoreFor(c.id);

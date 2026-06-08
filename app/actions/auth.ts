@@ -55,7 +55,13 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
       .returning();
     user = created;
     await db.insert(scores).values({ userId: user.id }).onConflictDoNothing();
-  } else if (!user.pinHash || !(await bcrypt.compare(pin, user.pinHash))) {
+  } else if (!user.pinHash) {
+    // Existing account with no PIN (new, or cleared by an admin reset) — the
+    // first PIN supplied claims the account from here on.
+    const pinHash = await bcrypt.hash(pin, 10);
+    await db.update(users).set({ pinHash }).where(eq(users.id, user.id));
+    user = { ...user, pinHash };
+  } else if (!(await bcrypt.compare(pin, user.pinHash))) {
     // Existing account — the PIN must match the one set at registration.
     return { error: "Incorrect PIN for this name." };
   }

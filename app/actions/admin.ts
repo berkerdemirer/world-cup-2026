@@ -86,13 +86,19 @@ const settingsSchema = z.object({
   ptsExact: z.coerce.number().int().min(0).max(100),
   ptsGoalDiff: z.coerce.number().int().min(0).max(100),
   ptsOutcome: z.coerce.number().int().min(0).max(100),
-  ptsBracketR32: z.coerce.number().int().min(0).max(100),
   ptsBracketR16: z.coerce.number().int().min(0).max(100),
   ptsBracketQf: z.coerce.number().int().min(0).max(100),
   ptsBracketSf: z.coerce.number().int().min(0).max(100),
   ptsBracketFinal: z.coerce.number().int().min(0).max(100),
   ptsBracketWinner: z.coerce.number().int().min(0).max(100),
   liveSyncSeconds: z.coerce.number().int().min(10).max(3600),
+  // Empty input clears the override so the lock derives from the first knockout
+  // kickoff; a datetime-local value (local time) sets an explicit lock.
+  bracketLockAt: z
+    .string()
+    .trim()
+    .transform((v) => (v ? new Date(v) : null))
+    .refine((d) => d === null || !Number.isNaN(d.getTime()), "Invalid lock date/time"),
 });
 
 export async function adminUpdateSettings(
