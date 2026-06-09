@@ -34,17 +34,18 @@ export function TopNav({
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
+    <>
     <header className="sticky top-0 z-30 border-b border-white/5 bg-ink text-white">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 md:px-6">
-        <Link href="/predict/matches" className="flex shrink-0 items-center">
-          <span className="display hidden text-lg leading-none tracking-wide sm:block">
+        <Link href="/predict/matches" className="flex min-w-0 items-center">
+          <span className="display truncate text-lg leading-none tracking-wide">
             Turnit World Cup 2026
           </span>
         </Link>
 
         <span className="hidden h-7 w-px shrink-0 bg-white/30 sm:block" />
 
-        <nav className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto px-1">
+        <nav className="hidden flex-1 items-center gap-1 lg:flex">
           {allLinks.map(({ href, label, Icon }) => {
             const active = isActive(href);
             return (
@@ -63,6 +64,8 @@ export function TopNav({
             );
           })}
         </nav>
+
+        <span className="flex-1 lg:hidden" />
 
         <div className="flex shrink-0 items-center gap-2.5">
           <div className="hidden text-right leading-tight sm:block">
@@ -86,5 +89,26 @@ export function TopNav({
         </div>
       </div>
     </header>
+
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-ink pb-[env(safe-area-inset-bottom)] text-white lg:hidden">
+      <div className="flex items-stretch justify-around">
+        {allLinks.map(({ href, label, Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] font-semibold transition ${
+                active ? "text-brand" : "text-white/70 hover:text-white"
+              }`}
+            >
+              <Icon className="size-5" strokeWidth={2.25} />
+              <span className="max-w-full truncate">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+    </>
   );
 }

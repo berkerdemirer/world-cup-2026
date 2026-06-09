@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { Fragment, useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
 import { scoreTier } from "@/lib/score-tier";
@@ -84,33 +84,29 @@ export function MatchTable({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl bg-card shadow-sm ring-1 ring-black/5">
-        <table className="w-full min-w-[600px] border-collapse">
-          <tbody className="divide-y divide-line">
-            {sections.map((s) => (
-              <Fragment key={s.key}>
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="bg-cream px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
-                  >
-                    <span className="text-ink">{s.label}</span>
-                    {s.openCount > 0 && <span> · {s.openCount} open</span>}
-                  </td>
-                </tr>
-                {s.rows.map((r) => (
-                  <Row
-                    key={r.match.id}
-                    row={r}
-                    points={points}
-                    luckyNonce={luckyNonce}
-                    registerFill={registerFill}
-                  />
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-4">
+        {sections.map((s) => (
+          <div
+            key={s.key}
+            className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-black/5"
+          >
+            <div className="bg-cream px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              <span className="text-ink">{s.label}</span>
+              {s.openCount > 0 && <span> · {s.openCount} open</span>}
+            </div>
+            <div className="divide-y divide-line">
+              {s.rows.map((r) => (
+                <Row
+                  key={r.match.id}
+                  row={r}
+                  points={points}
+                  luckyNonce={luckyNonce}
+                  registerFill={registerFill}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </>
   );
@@ -238,40 +234,21 @@ function Row({
     />
   );
 
+  // The same five blocks lay out as a single row on sm+ (time · home · score ·
+  // away · action) and reflow on mobile into a card: meta + action share a top
+  // line, and the matchup drops onto its own line below (the full-width spacer
+  // forces the wrap). Ordering is purely CSS so each match keeps one instance
+  // of its input state.
   return (
-    <tr className="hover:bg-cream/40">
-      <td className="w-px whitespace-nowrap px-3 py-2.5 align-middle text-xs font-bold uppercase tracking-wide text-muted-foreground">
-        <div className="text-ink">{fmtTime(kickoff)}</div>
-        <div>{fmtDate(kickoff)}</div>
-      </td>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 px-3 py-3 hover:bg-cream/40 sm:flex-nowrap sm:gap-3">
+      <div className="order-1 shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        <span className="text-ink">{fmtTime(kickoff)}</span>
+        <span className="sm:hidden"> · </span>
+        <span className="sm:mt-0.5 sm:block">{fmtDate(kickoff)}</span>
+      </div>
 
-      <td className="py-2.5 pl-3 pr-1 align-middle">
-        <TeamLabel team={match.homeTeam} placeholder={match.homePlaceholder} side="home" />
-      </td>
-
-      <td className="w-px px-1 py-2.5 align-middle">
-        {!locked ? (
-          <div className="flex items-center justify-center gap-1.5">
-            {input(home, setHome, "Home score")}
-            <span className="text-sm font-bold text-muted-foreground">:</span>
-            {input(away, setAway, "Away score")}
-          </div>
-        ) : hasScore ? (
-          <div className="display text-center text-xl text-ink">
-            {match.homeScore}&ndash;{match.awayScore}
-          </div>
-        ) : (
-          <div className="text-center text-xs font-semibold text-muted-foreground">Locked</div>
-        )}
-      </td>
-
-      <td className="py-2.5 pl-1 pr-3 align-middle">
-        <TeamLabel team={match.awayTeam} placeholder={match.awayPlaceholder} side="away" />
-      </td>
-
-      {/* Fixed width so the empty → Save → Picked transitions don't resize the
-          column and shift the rest of the row. */}
-      <td className="w-[116px] whitespace-nowrap px-3 py-2.5 align-middle text-right">
+      {/* Action / result — top-right on mobile, last column on desktop. */}
+      <div className="order-2 ml-auto shrink-0 whitespace-nowrap text-right sm:order-5 sm:ml-0 sm:w-[116px]">
         {locked ? (
           <ResultBadge match={match} prediction={prediction} points={points} hasScore={hasScore} />
         ) : dirty ? (
@@ -304,8 +281,36 @@ function Row({
             </span>
           </span>
         ) : null}
-      </td>
-    </tr>
+      </div>
+
+      {/* Full-width line break on mobile only — drops the matchup below the
+          meta/action line. Removed at sm+ where everything is one row. */}
+      <div className="order-3 w-full sm:hidden" aria-hidden="true" />
+
+      <div className="order-4 min-w-0 flex-1 sm:order-2">
+        <TeamLabel team={match.homeTeam} placeholder={match.homePlaceholder} side="home" />
+      </div>
+
+      <div className="order-5 shrink-0 sm:order-3">
+        {!locked ? (
+          <div className="flex items-center justify-center gap-1.5">
+            {input(home, setHome, "Home score")}
+            <span className="text-sm font-bold text-muted-foreground">:</span>
+            {input(away, setAway, "Away score")}
+          </div>
+        ) : hasScore ? (
+          <div className="display text-center text-xl text-ink">
+            {match.homeScore}&ndash;{match.awayScore}
+          </div>
+        ) : (
+          <div className="text-center text-xs font-semibold text-muted-foreground">Locked</div>
+        )}
+      </div>
+
+      <div className="order-6 min-w-0 flex-1 sm:order-4">
+        <TeamLabel team={match.awayTeam} placeholder={match.awayPlaceholder} side="away" />
+      </div>
+    </div>
   );
 }
 

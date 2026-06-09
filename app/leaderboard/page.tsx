@@ -16,21 +16,22 @@ export default async function LeaderboardPage() {
     <AppShell>
       <LiveRefresh intervalMs={60000} />
       <PageHeader
-        title="Table"
+        title="Leaderboard"
         subtitle="Ranked by total points, then exact scores, then who joined first."
       />
 
       <div className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-black/5">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              <th className="px-4 py-3">#</th>
-              <th className="px-4 py-3">Player</th>
-              <th className="px-4 py-3 text-center">Match</th>
-              <th className="px-4 py-3 text-center">Bracket</th>
-              <th className="px-4 py-3 text-center">Exact</th>
-              <th className="hidden px-4 py-3 text-center sm:table-cell">Behind</th>
-              <th className="px-4 py-3 text-center">Total</th>
+              <th className="px-3 py-3 sm:px-4">#</th>
+              <th className="px-3 py-3 sm:px-4">Player</th>
+              <th className="px-3 py-3 text-center sm:px-4">Match</th>
+              <th className="px-3 py-3 text-center sm:px-4">Bracket</th>
+              <th className="px-3 py-3 text-center sm:px-4">Exact</th>
+              <th className="hidden px-3 py-3 text-center sm:table-cell sm:px-4">Behind</th>
+              <th className="px-3 py-3 text-center sm:px-4">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -48,14 +49,14 @@ export default async function LeaderboardPage() {
               const gap = leaderTotal - r.totalPoints;
               return (
                 <tr key={r.userId} className={isMe ? "bg-brand/10" : ""}>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 sm:px-4">
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-full text-xs font-bold ${medal}`}
                     >
                       {r.rank}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-ink">
+                  <td className="whitespace-nowrap px-3 py-3 font-semibold text-ink sm:px-4">
                     {r.displayName}
                     {isMe && (
                       <span className="ml-1.5 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold uppercase text-brand-foreground">
@@ -63,13 +64,13 @@ export default async function LeaderboardPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center text-muted-foreground">{r.matchPoints}</td>
-                  <td className="px-4 py-3 text-center text-muted-foreground">{r.bracketPoints}</td>
-                  <td className="px-4 py-3 text-center text-muted-foreground">{r.exactCount}</td>
-                  <td className="hidden px-4 py-3 text-center text-muted-foreground sm:table-cell">
+                  <td className="px-3 py-3 text-center text-muted-foreground sm:px-4">{r.matchPoints}</td>
+                  <td className="px-3 py-3 text-center text-muted-foreground sm:px-4">{r.bracketPoints}</td>
+                  <td className="px-3 py-3 text-center text-muted-foreground sm:px-4">{r.exactCount}</td>
+                  <td className="hidden px-3 py-3 text-center text-muted-foreground sm:table-cell sm:px-4">
                     {gap === 0 ? "—" : `-${gap}`}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-3 text-center sm:px-4">
                     <span
                       className={`display text-lg ${r.rank === 1 ? "text-amber-500" : "text-ink"}`}
                     >
@@ -88,6 +89,7 @@ export default async function LeaderboardPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </AppShell>
   );
