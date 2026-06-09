@@ -9,6 +9,7 @@ import {
 import { getSettings } from "@/lib/scoring";
 import { STAGE_LABELS } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
+import { LiveRefresh } from "@/components/live-refresh";
 import { MatchTable, type MatchPoints } from "./match-table";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
@@ -60,6 +61,7 @@ export default async function FixturesPage() {
 
   return (
     <AppShell>
+      <LiveRefresh intervalMs={settings.liveSyncSeconds * 1000} />
       <PageHeader
         title="Fixtures"
         subtitle={

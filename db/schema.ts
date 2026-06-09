@@ -143,7 +143,7 @@ export const settings = pgTable("settings", {
   // Live-sync throttle: a single shared clock so the external API is called at
   // most once per `liveSyncSeconds`, regardless of how many clients are polling.
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
-  liveSyncSeconds: integer("live_sync_seconds").notNull().default(30),
+  liveSyncSeconds: integer("live_sync_seconds").notNull().default(20),
   // Shared "room password" gate. When set (or ROOM_PASSWORD env is set), every
   // login must supply it. null + no env = open registration.
   roomPasswordHash: text("room_password_hash"),

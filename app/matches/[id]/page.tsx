@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { LiveRefresh } from "@/components/live-refresh";
 import { requireUser } from "@/lib/session";
 import { getMatchWithTeams, getMatchPredictions, isMatchLocked } from "@/lib/queries";
 import { TeamBadge } from "@/components/team-badge";
@@ -33,6 +34,7 @@ export default async function MatchDetailPage({
 
   return (
     <AppShell>
+      {!finished && <LiveRefresh intervalMs={settings.liveSyncSeconds * 1000} />}
       <div className="mb-4 text-sm text-slate-500">{STAGE_LABELS[match.stage]}</div>
 
       <div className="mb-6 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-xl border border-slate-200 bg-white p-5">

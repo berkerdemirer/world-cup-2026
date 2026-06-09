@@ -222,6 +222,12 @@ export interface MaybeSyncResult {
 export async function maybeSync(): Promise<MaybeSyncResult> {
   const s = await getSettings();
   const intervalSec = s.liveSyncSeconds;
+  // Clients poll at `liveSyncSeconds`, but network/processing latency means a
+  // poll lands a hair under that window — comparing against the full interval
+  // would throttle every other one and halve the real refresh rate. A 2s grace
+  // lets an at-interval poll reliably win the slot while still bounding upstream
+  // calls to ~once per interval.
+  const windowSec = Math.max(intervalSec - 2, 1);
 
   const claimed = await db
     .update(settings)
@@ -231,7 +237,7 @@ export async function maybeSync(): Promise<MaybeSyncResult> {
         eq(settings.id, 1),
         or(
           isNull(settings.lastSyncedAt),
-          lt(settings.lastSyncedAt, sql`now() - (${intervalSec} * interval '1 second')`),
+          lt(settings.lastSyncedAt, sql`now() - (${windowSec} * interval '1 second')`),
         ),
       ),
     )

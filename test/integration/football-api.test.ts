@@ -195,6 +195,21 @@ test("maybeSync syncs again once the throttle window has elapsed", async () => {
   assert.ok(s.lastSyncedAt && s.lastSyncedAt.getTime() > Date.now() - 5_000);
 });
 
+test("maybeSync grace lets an at-interval poll just under the window still sync", async () => {
+  const m = mockMatches();
+  // 29s since last sync with a 30s setting: inside the raw interval, but past
+  // the 2s grace window — a client polling every 30s must still get a refresh
+  // rather than being throttled to every other tick.
+  await setSettings({
+    liveSyncSeconds: 30,
+    lastSyncedAt: new Date(Date.now() - 29_000),
+  });
+
+  const res = await maybeSync();
+  assert.equal(res.synced, true);
+  assert.equal(m.calls.filter((u) => u.includes("/competitions/WC/matches")).length, 1);
+});
+
 test("maybeSync claims the slot atomically under concurrent polls", async () => {
   const m = mockMatches();
   await setSettings({ liveSyncSeconds: 30, lastSyncedAt: null });

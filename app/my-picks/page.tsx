@@ -70,7 +70,7 @@ export default async function MyPicksPage() {
 
   return (
     <AppShell>
-      <LiveRefresh intervalMs={60000} />
+      <LiveRefresh intervalMs={settings.liveSyncSeconds * 1000} />
       <PageHeader title="My Picks" subtitle="Your points, accuracy, and prediction history." />
 
       {/* Profile banner */}
