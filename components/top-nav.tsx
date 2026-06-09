@@ -68,9 +68,9 @@ export function TopNav({
         <span className="flex-1 lg:hidden" />
 
         <div className="flex shrink-0 items-center gap-2.5">
-          <div className="hidden text-right leading-tight sm:block">
-            <div className="text-sm font-semibold">{displayName}</div>
-            <div className="text-xs text-white">
+          <div className="text-right leading-tight">
+            <div className="hidden text-sm font-semibold sm:block">{displayName}</div>
+            <div className="whitespace-nowrap text-xs text-white">
               {rank ? `Rank #${rank}` : "Unranked"} · {points ?? 0} pts
             </div>
           </div>
