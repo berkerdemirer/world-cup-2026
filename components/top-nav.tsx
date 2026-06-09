@@ -69,7 +69,7 @@ export function TopNav({
 
         <div className="flex shrink-0 items-center gap-2.5">
           <div className="text-right leading-tight">
-            <div className="hidden text-sm font-semibold lg:block">{displayName}</div>
+            <div className="text-sm font-semibold">{displayName}</div>
             <div className="whitespace-nowrap text-xs text-white">
               {rank ? `Rank #${rank}` : "Unranked"} · {points ?? 0} pts
             </div>
