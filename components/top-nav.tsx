@@ -43,7 +43,7 @@ export function TopNav({
           </span>
         </Link>
 
-        <span className="hidden h-7 w-px shrink-0 bg-white/30 sm:block" />
+        <span className="hidden h-7 w-px shrink-0 bg-white/30 lg:block" />
 
         <nav className="hidden flex-1 items-center gap-1 lg:flex">
           {allLinks.map(({ href, label, Icon }) => {
@@ -69,7 +69,7 @@ export function TopNav({
 
         <div className="flex shrink-0 items-center gap-2.5">
           <div className="text-right leading-tight">
-            <div className="hidden text-sm font-semibold sm:block">{displayName}</div>
+            <div className="hidden text-sm font-semibold lg:block">{displayName}</div>
             <div className="whitespace-nowrap text-xs text-white">
               {rank ? `Rank #${rank}` : "Unranked"} · {points ?? 0} pts
             </div>
