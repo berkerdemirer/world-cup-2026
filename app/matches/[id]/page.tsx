@@ -3,8 +3,10 @@ import { AppShell } from "@/components/app-shell";
 import { LiveRefresh } from "@/components/live-refresh";
 import { requireUser } from "@/lib/session";
 import { getMatchWithTeams, getMatchPredictions, isMatchLocked } from "@/lib/queries";
+import { LiveBadge } from "@/components/live-badge";
 import { TeamBadge } from "@/components/team-badge";
 import { STAGE_LABELS } from "@/lib/format";
+import { isMatchLive } from "@/lib/match-status";
 import { scoreTier, pointsForTier, getSettings, type ScoreTier } from "@/lib/scoring";
 
 const TIER_LABEL: Record<ScoreTier, string> = {
@@ -28,6 +30,7 @@ export default async function MatchDetailPage({
   if (!match) notFound();
 
   const locked = isMatchLocked(match);
+  const live = isMatchLive(match);
   const finished = match.status === "FINISHED";
   const settings = await getSettings();
   const predictions = locked ? await getMatchPredictions(matchId) : [];
@@ -37,13 +40,20 @@ export default async function MatchDetailPage({
       {!finished && <LiveRefresh intervalMs={settings.liveSyncSeconds * 1000} />}
       <div className="mb-4 text-sm text-slate-500">{STAGE_LABELS[match.stage]}</div>
 
-      <div className="mb-6 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-xl border border-slate-200 bg-white p-5">
+      <div
+        className={`mb-6 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-xl border bg-white p-5 ${
+          live ? "border-brand/40 ring-1 ring-brand/20" : "border-slate-200"
+        }`}
+      >
         <div className="justify-self-end text-lg">
           <TeamBadge team={match.homeTeam} placeholder={match.homePlaceholder} align="right" />
         </div>
         <div className="text-center">
+          {live && <LiveBadge className="mb-2 justify-center" />}
           <div className="font-mono text-2xl font-bold text-slate-900">
-            {finished ? `${match.homeScore} : ${match.awayScore}` : "vs"}
+            {finished || live
+              ? `${match.homeScore ?? 0} : ${match.awayScore ?? 0}`
+              : "vs"}
           </div>
           {finished && match.homePens != null && match.awayPens != null && (
             <div className="text-xs text-slate-500">

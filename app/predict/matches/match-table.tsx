@@ -4,8 +4,11 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
+import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
 import { fixtureSectionOf } from "@/lib/format";
+import { isMatchLive } from "@/lib/match-status";
+import { cn } from "@/lib/utils";
 import type { MatchWithTeams } from "@/lib/queries";
 import type { Team } from "@/db/schema";
 
@@ -173,6 +176,7 @@ function Row({
 }) {
   const { match, prediction, locked } = row;
   const kickoff = new Date(match.kickoffAt);
+  const live = isMatchLive(match);
   const hasScore = match.homeScore != null && match.awayScore != null;
 
   const [home, setHome] = useState<string>(prediction ? String(prediction.homeScore) : "");
@@ -260,11 +264,25 @@ function Row({
   // forces the wrap). Ordering is purely CSS so each match keeps one instance
   // of its input state.
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 px-3 py-3 hover:bg-cream/40 sm:flex-nowrap sm:gap-3">
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-x-2 gap-y-2.5 px-3 py-3 sm:flex-nowrap sm:gap-3",
+        live ? "bg-brand/8 ring-1 ring-inset ring-brand/25" : "hover:bg-cream/40",
+      )}
+    >
       <div className="order-1 shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wide text-muted-foreground">
-        <span className="text-ink">{fmtTime(kickoff)}</span>
-        <span className="sm:hidden"> · </span>
-        <span className="sm:mt-0.5 sm:block">{fmtDate(kickoff)}</span>
+        {live ? (
+          <>
+            <LiveBadge />
+            <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>
+          </>
+        ) : (
+          <>
+            <span className="text-ink">{fmtTime(kickoff)}</span>
+            <span className="sm:hidden"> · </span>
+            <span className="sm:mt-0.5 sm:block">{fmtDate(kickoff)}</span>
+          </>
+        )}
       </div>
 
       {/* Action / result — top-right on mobile, last column on desktop. */}
@@ -317,6 +335,10 @@ function Row({
             {input(home, setHome, "Home score")}
             <span className="text-sm font-bold text-muted-foreground">:</span>
             {input(away, setAway, "Away score")}
+          </div>
+        ) : live ? (
+          <div className="display text-center text-xl tabular-nums text-ink">
+            {match.homeScore ?? 0}&ndash;{match.awayScore ?? 0}
           </div>
         ) : hasScore ? (
           <div className="display text-center text-xl text-ink">
