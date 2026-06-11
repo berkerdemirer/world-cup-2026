@@ -1,10 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
 import { scoreTier } from "@/lib/score-tier";
+import { fixtureSectionOf } from "@/lib/format";
 import type { MatchWithTeams } from "@/lib/queries";
 import type { Team } from "@/db/schema";
 
@@ -37,13 +38,32 @@ export type TableRow = {
 
 export type TableSection = { key: string; label: string; openCount: number; rows: TableRow[] };
 
+function buildSections(rows: TableRow[]): TableSection[] {
+  const sections: TableSection[] = [];
+  const byKey = new Map<string, TableSection>();
+  for (const row of rows) {
+    const { key, label } = fixtureSectionOf(row.match);
+    let section = byKey.get(key);
+    if (!section) {
+      section = { key, label, openCount: 0, rows: [] };
+      byKey.set(key, section);
+      sections.push(section);
+    }
+    section.rows.push(row);
+    if (!row.locked) section.openCount++;
+  }
+  return sections;
+}
+
 export function MatchTable({
-  sections,
+  rows,
   points,
 }: {
-  sections: TableSection[];
+  rows: TableRow[];
   points: MatchPoints;
 }) {
+  // Group by the viewer's local calendar day so section headers match row kickoff times.
+  const sections = useMemo(() => buildSections(rows), [rows]);
   // Bumping this nonce signals every open, un-picked row to roll a random score.
   const [luckyNonce, setLuckyNonce] = useState(0);
   // Count of rows currently saving a lucky pick — drives the button's spinner.

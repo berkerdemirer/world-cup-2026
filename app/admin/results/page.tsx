@@ -1,22 +1,9 @@
 import { AppShell } from "@/components/app-shell";
 import { requireAdmin } from "@/lib/session";
 import { getMatchesWithTeams, type MatchWithTeams } from "@/lib/queries";
-import { STAGE_LABELS } from "@/lib/format";
+import { FIXTURE_TZ, fixtureSectionOf } from "@/lib/format";
 import { PageHeader, SectionLabel } from "@/components/page-header";
 import { ResultForm } from "./result-form";
-
-/** Group-stage matches group by calendar day; knockout matches by round. */
-function sectionOf(m: MatchWithTeams): { key: string; label: string } {
-  if (m.stage === "GROUP_STAGE") {
-    const d = new Date(m.kickoffAt);
-    const key = `d${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(
-      d.getDate(),
-    ).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-    return { key, label };
-  }
-  return { key: m.stage, label: STAGE_LABELS[m.stage] };
-}
 
 export default async function AdminResultsPage() {
   await requireAdmin();
@@ -26,7 +13,7 @@ export default async function AdminResultsPage() {
   const sections: { key: string; label: string; matches: MatchWithTeams[] }[] = [];
   const byKey = new Map<string, (typeof sections)[number]>();
   for (const m of all) {
-    const { key, label } = sectionOf(m);
+    const { key, label } = fixtureSectionOf(m, { timeZone: FIXTURE_TZ, weekday: "long" });
     let s = byKey.get(key);
     if (!s) {
       s = { key, label, matches: [] };
