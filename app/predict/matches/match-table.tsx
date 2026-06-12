@@ -178,6 +178,7 @@ function Row({
   const kickoff = new Date(match.kickoffAt);
   const live = isMatchLive(match);
   const hasScore = match.homeScore != null && match.awayScore != null;
+  const settled = match.status === "FINISHED" && hasScore;
 
   const [home, setHome] = useState<string>(prediction ? String(prediction.homeScore) : "");
   const [away, setAway] = useState<string>(prediction ? String(prediction.awayScore) : "");
@@ -266,7 +267,7 @@ function Row({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-2.5 px-3 py-3 sm:flex-nowrap sm:gap-3",
+        "flex flex-wrap items-center justify-between gap-x-2 gap-y-2.5 px-3 py-3 sm:flex-nowrap sm:gap-3",
         live ? "bg-brand/8 ring-1 ring-inset ring-brand/25" : "hover:bg-cream/40",
       )}
     >
@@ -285,10 +286,27 @@ function Row({
         )}
       </div>
 
+      {/* Result badge — centered on the top line on mobile (between the date and
+          the pick), tucked beside the pick on desktop. Only once the match is settled. */}
+      <div className="order-2 shrink-0 sm:order-5 sm:w-[84px] sm:text-center">
+        {settled && prediction && (
+          <TierBadge match={match} prediction={prediction} points={points} />
+        )}
+      </div>
+
       {/* Action / result — top-right on mobile, last column on desktop. */}
-      <div className="order-2 ml-auto shrink-0 whitespace-nowrap text-right sm:order-5 sm:ml-0 sm:w-[116px]">
+      <div className="order-3 shrink-0 whitespace-nowrap text-right sm:order-6 sm:w-[104px]">
         {locked ? (
-          <ResultBadge match={match} prediction={prediction} points={points} hasScore={hasScore} />
+          !prediction ? (
+            <span className="text-xs italic text-muted-foreground">No pick</span>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground">
+              {settled ? "You picked" : "Picked"}{" "}
+              <span className="font-bold text-ink">
+                {prediction.homeScore}&ndash;{prediction.awayScore}
+              </span>
+            </span>
+          )
         ) : dirty ? (
           // Unsaved changes — show the Save action.
           <div className="flex items-center justify-end gap-2">
@@ -323,13 +341,13 @@ function Row({
 
       {/* Full-width line break on mobile only — drops the matchup below the
           meta/action line. Removed at sm+ where everything is one row. */}
-      <div className="order-3 w-full sm:hidden" aria-hidden="true" />
+      <div className="order-4 w-full sm:hidden" aria-hidden="true" />
 
-      <div className="order-4 min-w-0 flex-1 sm:order-2">
+      <div className="order-5 min-w-0 flex-1 sm:order-2">
         <TeamLabel team={match.homeTeam} placeholder={match.homePlaceholder} side="home" />
       </div>
 
-      <div className="order-5 shrink-0 sm:order-3">
+      <div className="order-6 w-[116px] shrink-0 sm:order-3">
         {!locked ? (
           <div className="flex items-center justify-center gap-1.5">
             {input(home, setHome, "Home score")}
@@ -349,38 +367,22 @@ function Row({
         )}
       </div>
 
-      <div className="order-6 min-w-0 flex-1 sm:order-4">
+      <div className="order-7 min-w-0 flex-1 sm:order-4">
         <TeamLabel team={match.awayTeam} placeholder={match.awayPlaceholder} side="away" />
       </div>
     </div>
   );
 }
 
-function ResultBadge({
+function TierBadge({
   match,
   prediction,
   points,
-  hasScore,
 }: {
   match: MatchWithTeams;
-  prediction: { homeScore: number; awayScore: number } | null;
+  prediction: { homeScore: number; awayScore: number };
   points: MatchPoints;
-  hasScore: boolean;
 }) {
-  const settled = match.status === "FINISHED" && hasScore;
-  if (!prediction) {
-    return <span className="text-xs italic text-muted-foreground">No pick</span>;
-  }
-  if (!settled) {
-    return (
-      <span className="text-xs font-medium text-muted-foreground">
-        Picked{" "}
-        <span className="font-bold text-ink">
-          {prediction.homeScore}&ndash;{prediction.awayScore}
-        </span>
-      </span>
-    );
-  }
   const tier = scoreTier(
     prediction.homeScore,
     prediction.awayScore,
