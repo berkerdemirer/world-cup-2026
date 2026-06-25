@@ -29,8 +29,7 @@ function getDb(): DB {
   return _db;
 }
 
-// `pg` is a devDependency and is only required on the test path, so production
-// builds (which never set DB_DRIVER=pg) don't need it installed.
+// `pg` is only required for migrations and the DB_DRIVER=pg test path.
 function createPgDb(connectionString: string): DB {
   const require = createRequire(import.meta.url);
   const { Pool } = require("pg");
