@@ -1,15 +1,66 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import type { HistoryItem } from "@/lib/prediction-history";
+import {
+  DEFAULT_LEADERBOARD_DIRECTION,
+  DEFAULT_LEADERBOARD_SORT,
+  defaultDirectionForSortKey,
+  sortLeaderboardRows,
+  type LeaderboardSortKey,
+  type SortDirection,
+} from "@/lib/leaderboard-sort";
 import type { LeaderboardRow } from "@/lib/queries";
 import { PlayerPicksDialog } from "@/components/player-picks-dialog";
+import { cn } from "@/lib/utils";
 
 export type PointValues = {
   exact: number;
   goalDiff: number;
   outcome: number;
 };
+
+function SortableHeader({
+  label,
+  sortKey,
+  activeSortKey,
+  direction,
+  onSort,
+  className,
+  title,
+}: {
+  label: string;
+  sortKey: LeaderboardSortKey;
+  activeSortKey: LeaderboardSortKey;
+  direction: SortDirection;
+  onSort: (key: LeaderboardSortKey) => void;
+  className?: string;
+  title?: string;
+}) {
+  const active = activeSortKey === sortKey;
+  const SortIcon = active ? (direction === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+
+  return (
+    <th
+      className={className}
+      aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <button
+        type="button"
+        title={title}
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-md outline-none transition hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50",
+          active ? "text-ink" : "text-muted-foreground",
+        )}
+      >
+        <span>{label}</span>
+        <SortIcon className={cn("size-3 shrink-0", active ? "opacity-100" : "opacity-40")} />
+      </button>
+    </th>
+  );
+}
 
 export function LeaderboardTable({
   rows,
@@ -26,6 +77,27 @@ export function LeaderboardTable({
   const [history, setHistory] = useState<HistoryItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<LeaderboardSortKey>(DEFAULT_LEADERBOARD_SORT);
+  const [sortDirection, setSortDirection] =
+    useState<SortDirection>(DEFAULT_LEADERBOARD_DIRECTION);
+
+  const sortedRows = useMemo(
+    () => sortLeaderboardRows(rows, sortKey, sortDirection, leaderTotal),
+    [rows, sortKey, sortDirection, leaderTotal],
+  );
+
+  const handleSort = useCallback(
+    (key: LeaderboardSortKey) => {
+      if (key === sortKey) {
+        setSortDirection((currentDirection) => (currentDirection === "asc" ? "desc" : "asc"));
+        return;
+      }
+
+      setSortKey(key);
+      setSortDirection(defaultDirectionForSortKey(key));
+    },
+    [sortKey],
+  );
 
   const closeDialog = useCallback(() => {
     setSelected(null);
@@ -61,25 +133,85 @@ export function LeaderboardTable({
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                <th className="px-3 py-3 sm:px-4">#</th>
-                <th className="px-3 py-3 sm:px-4">Player</th>
-                <th className="px-2 py-3 text-center sm:px-3" title={`${pointValues.exact} pts each`}>
-                  Exact
-                </th>
-                <th className="px-2 py-3 text-center sm:px-3" title={`${pointValues.goalDiff} pts each`}>
-                  +GD
-                </th>
-                <th className="px-2 py-3 text-center sm:px-3" title={`${pointValues.outcome} pts each`}>
-                  Result
-                </th>
-                <th className="px-2 py-3 text-center sm:px-3">Match</th>
-                <th className="px-2 py-3 text-center sm:px-3">Bracket</th>
-                <th className="hidden px-2 py-3 text-center sm:table-cell sm:px-3">Behind</th>
-                <th className="px-3 py-3 text-center sm:px-4">Total</th>
+                <SortableHeader
+                  label="#"
+                  sortKey="rank"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-3 py-3 sm:px-4"
+                />
+                <SortableHeader
+                  label="Player"
+                  sortKey="displayName"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-3 py-3 sm:px-4"
+                />
+                <SortableHeader
+                  label="Exact"
+                  sortKey="exactCount"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-2 py-3 text-center sm:px-3"
+                  title={`${pointValues.exact} pts each`}
+                />
+                <SortableHeader
+                  label="+GD"
+                  sortKey="goalDiffCount"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-2 py-3 text-center sm:px-3"
+                  title={`${pointValues.goalDiff} pts each`}
+                />
+                <SortableHeader
+                  label="Result"
+                  sortKey="outcomeCount"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-2 py-3 text-center sm:px-3"
+                  title={`${pointValues.outcome} pts each`}
+                />
+                <SortableHeader
+                  label="Match"
+                  sortKey="matchPoints"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-2 py-3 text-center sm:px-3"
+                />
+                <SortableHeader
+                  label="Bracket"
+                  sortKey="bracketPoints"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-2 py-3 text-center sm:px-3"
+                />
+                <SortableHeader
+                  label="Behind"
+                  sortKey="behind"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="hidden px-2 py-3 text-center sm:table-cell sm:px-3"
+                />
+                <SortableHeader
+                  label="Total"
+                  sortKey="totalPoints"
+                  activeSortKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                  className="px-3 py-3 text-center sm:px-4"
+                />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rows.map((r) => {
+              {sortedRows.map((r) => {
                 const isMe = r.userId === currentUserId;
                 const medal =
                   r.rank === 1
@@ -162,7 +294,8 @@ export function LeaderboardTable({
 
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
         Match pts = Exact ({pointValues.exact}) + +GD ({pointValues.goalDiff}) + Result (
-        {pointValues.outcome}). Total = Match + Bracket. Tap a player to see their scored picks.
+        {pointValues.outcome}). Total = Match + Bracket. Tap a column header to sort, or tap a
+        player to see their scored picks.
       </p>
 
       {selected && (
