@@ -74,6 +74,9 @@ export default async function MyPicksPage() {
       <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
         Prediction History
       </h2>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Tap a match to see everyone&apos;s picks.
+      </p>
       <PredictionHistoryList items={history} />
     </AppShell>
   );
