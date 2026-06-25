@@ -395,11 +395,6 @@ function Row({
         ) : live ? (
           <div className="display text-center text-xl tabular-nums text-ink">
             {match.homeScore ?? 0}&ndash;{match.awayScore ?? 0}
-            {liveClock && (
-              <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-foreground">
-                {liveClock}
-              </div>
-            )}
           </div>
         ) : hasScore ? (
           <div className="display text-center text-xl text-ink">
