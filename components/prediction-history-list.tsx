@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import type { HistoryItem } from "@/lib/prediction-history";
 import type { ScoreTier } from "@/lib/score-tier";
 import type { Team } from "@/db/schema";
@@ -59,14 +60,17 @@ export function PredictionHistoryList({ items }: { items: HistoryItem[] }) {
         ))}
       </div>
 
-      {selectedMatchId != null && (
-        <MatchPredictionsDialog
-          data={data}
-          loading={loading}
-          error={error}
-          onClose={closeDialog}
-        />
-      )}
+      {selectedMatchId != null &&
+        createPortal(
+          <MatchPredictionsDialog
+            matchId={selectedMatchId}
+            data={data}
+            loading={loading}
+            error={error}
+            onClose={closeDialog}
+          />,
+          document.body,
+        )}
     </>
   );
 }

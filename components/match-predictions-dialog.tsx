@@ -42,26 +42,40 @@ function teamName(team: Team | null, placeholder: string | null): string {
 }
 
 export function MatchPredictionsDialog({
+  matchId,
   data,
   loading,
   error,
   onClose,
 }: {
+  matchId: number;
   data: MatchPredictionsData | null;
   loading: boolean;
   error: string | null;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const skipCloseRef = useRef(false);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (!dialog.open) dialog.showModal();
+    dialog.showModal();
     return () => {
-      if (dialog.open) dialog.close();
+      skipCloseRef.current = true;
     };
-  }, [data?.match.id, loading]);
+  }, [matchId]);
+
+  const requestClose = () => {
+    skipCloseRef.current = false;
+    dialogRef.current?.close();
+    onClose();
+  };
+
+  const handleDialogClose = () => {
+    if (skipCloseRef.current) return;
+    onClose();
+  };
 
   const homeName = data ? teamName(data.match.homeTeam, data.match.homePlaceholder) : "";
   const awayName = data ? teamName(data.match.awayTeam, data.match.awayPlaceholder) : "";
@@ -70,9 +84,9 @@ export function MatchPredictionsDialog({
     <dialog
       ref={dialogRef}
       className="m-auto w-[min(100vw-2rem,42rem)] max-h-[min(100vh-2rem,720px)] overflow-hidden rounded-2xl border-0 bg-card p-0 text-ink shadow-xl ring-1 ring-black/10 backdrop:bg-ink/50 open:flex open:flex-col"
-      onClose={onClose}
+      onClose={handleDialogClose}
       onClick={(e) => {
-        if (e.target === dialogRef.current) onClose();
+        if (e.target === dialogRef.current) requestClose();
       }}
     >
       <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
@@ -99,7 +113,7 @@ export function MatchPredictionsDialog({
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           className="rounded-lg p-2 text-muted-foreground transition hover:bg-line/60 hover:text-ink"
           aria-label="Close"
         >
