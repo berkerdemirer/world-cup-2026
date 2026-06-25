@@ -17,3 +17,4 @@ Non-obvious setup/run notes (the update script only runs `pnpm install`):
 - **Admin account.** `pnpm seed` creates admins from `ADMIN_NAMES` with **no PIN**; the first login for that display name claims the account by setting its PIN. Current seed uses `ADMIN_NAMES=Admin`, so log in as `Admin` with any 4–8 digit PIN plus the room key.
 - **Fixtures/sync** need a real `FOOTBALL_DATA_TOKEN` from football-data.org; without it the app runs but Admin → Sync and live scores won't load real matches.
 - **Smoke test** (`pnpm test:smoke`) needs a separate live Neon `DATABASE_TEST_URL` and is not run in this environment.
+- **Vercel deploys** run `drizzle-kit push` via the `vercel-build` script before `next build`. If production errors with `column … does not exist`, run `DATABASE_URL=<prod> pnpm db:push` locally or execute the `ALTER TABLE` from the latest file in `db/migrations/` in the Neon SQL console, then redeploy.
