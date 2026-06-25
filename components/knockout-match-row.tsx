@@ -81,10 +81,10 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
     >
       <div className="w-full shrink-0 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:w-[88px]">
         {live ? (
-          <>
+          <span className="inline-flex items-center gap-1.5">
             <LiveBadge />
             <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>
-          </>
+          </span>
         ) : (
           <>
             <span className="text-ink">{fmtTime(kickoff)}</span>
