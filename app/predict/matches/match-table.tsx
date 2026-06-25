@@ -7,7 +7,6 @@ import { submitScorePrediction } from "@/app/actions/predictions";
 import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
 import {
-  FIXTURE_TZ,
   compareMatchesByKickoff,
   fixtureSectionOf,
   formatFixtureDate,
@@ -15,6 +14,7 @@ import {
   formatLiveClock,
 } from "@/lib/format";
 import { isMatchLive } from "@/lib/match-status";
+import { useIsClient } from "@/lib/use-is-client";
 import { cn } from "@/lib/utils";
 import type { MatchWithTeams } from "@/lib/queries";
 import type { Team } from "@/db/schema";
@@ -46,7 +46,7 @@ function buildSections(rows: TableRow[]): TableSection[] {
   const byKey = new Map<string, TableSection>();
   const sorted = [...rows].sort((a, b) => compareMatchesByKickoff(a.match, b.match));
   for (const row of sorted) {
-    const { key, label } = fixtureSectionOf(row.match, { timeZone: FIXTURE_TZ });
+    const { key, label } = fixtureSectionOf(row.match);
     let section = byKey.get(key);
     if (!section) {
       section = { key, label, openCount: 0, rows: [] };
@@ -59,6 +59,18 @@ function buildSections(rows: TableRow[]): TableSection[] {
   return sections;
 }
 
+function buildFlatSection(rows: TableRow[]): TableSection[] {
+  const sorted = [...rows].sort((a, b) => compareMatchesByKickoff(a.match, b.match));
+  return [
+    {
+      key: "pending",
+      label: "",
+      openCount: sorted.filter((r) => !r.locked).length,
+      rows: sorted,
+    },
+  ];
+}
+
 export function MatchTable({
   rows,
   points,
@@ -66,7 +78,11 @@ export function MatchTable({
   rows: TableRow[];
   points: MatchPoints;
 }) {
-  const sections = useMemo(() => buildSections(rows), [rows]);
+  const isClient = useIsClient();
+  const sections = useMemo(
+    () => (isClient ? buildSections(rows) : buildFlatSection(rows)),
+    [rows, isClient],
+  );
   // Bumping this nonce signals every open, un-picked row to roll a random score.
   const [luckyNonce, setLuckyNonce] = useState(0);
   // Count of rows currently saving a lucky pick — drives the button's spinner.
@@ -155,9 +171,11 @@ function SectionCard({
 
   return (
     <div className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-black/5">
-      <div className="bg-cream px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-        {header}
-      </div>
+      {section.label ? (
+        <div className="bg-cream px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          {header}
+        </div>
+      ) : null}
       <div className="divide-y divide-line">
         {section.rows.map((r) => (
           <Row
@@ -212,10 +230,13 @@ function Row({
   luckyNonce: number;
   registerFill: (delta: number) => void;
 }) {
+  const isClient = useIsClient();
   const { match, prediction, locked } = row;
   const kickoff = new Date(match.kickoffAt);
   const live = isMatchLive(match);
   const liveClock = live ? formatLiveClock(match) : null;
+  const kickoffTime = isClient ? formatFixtureTime(kickoff) : null;
+  const kickoffDate = isClient ? formatFixtureDate(kickoff, { uppercase: true }) : null;
   const hasScore = match.homeScore != null && match.awayScore != null;
   const settled = match.status === "FINISHED" && hasScore;
 
@@ -314,13 +335,13 @@ function Row({
         {live ? (
           <span className="inline-flex items-center gap-1.5">
             <LiveBadge status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
-            {!liveClock && <span suppressHydrationWarning className="sm:mt-0.5 sm:block">{formatFixtureTime(kickoff)}</span>}
+            {!liveClock && kickoffTime && <span className="sm:mt-0.5 sm:block">{kickoffTime}</span>}
           </span>
         ) : (
           <>
-            <span suppressHydrationWarning className="text-ink">{formatFixtureTime(kickoff)}</span>
+            {kickoffTime ? <span className="text-ink">{kickoffTime}</span> : <span aria-hidden="true">&nbsp;</span>}
             <span className="sm:hidden"> · </span>
-            <span suppressHydrationWarning className="sm:mt-0.5 sm:block">{formatFixtureDate(kickoff, { uppercase: true })}</span>
+            {kickoffDate ? <span className="sm:mt-0.5 sm:block">{kickoffDate}</span> : <span aria-hidden="true">&nbsp;</span>}
           </>
         )}
       </div>

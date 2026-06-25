@@ -76,7 +76,7 @@ export function fixtureDayKey(date: Date, timeZone?: string): string {
   return `d${year}${month}${day}`;
 }
 
-/** Fixture kickoff time in the viewer's local timezone (pair with suppressHydrationWarning in client UI). */
+/** Fixture kickoff time in the viewer's local timezone (render only after client mount). */
 export function formatFixtureTime(date: Date): string {
   return date.toLocaleTimeString("en-US", {
     hour: "2-digit",
@@ -85,7 +85,7 @@ export function formatFixtureTime(date: Date): string {
   });
 }
 
-/** Fixture calendar date in the viewer's local timezone (pair with suppressHydrationWarning in client UI). */
+/** Fixture calendar date in the viewer's local timezone (render only after client mount). */
 export function formatFixtureDate(date: Date, options?: { uppercase?: boolean }): string {
   const label = date.toLocaleDateString("en-US", {
     month: "short",
