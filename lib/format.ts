@@ -13,6 +13,16 @@ export const STAGE_LABELS: Record<Stage, string> = {
   FINAL: "Final",
 };
 
+/** Knockout rounds in bracket order (excludes group stage). */
+export const KNOCKOUT_STAGES: Stage[] = [
+  "LAST_32",
+  "LAST_16",
+  "QUARTER_FINALS",
+  "SEMI_FINALS",
+  "THIRD_PLACE",
+  "FINAL",
+];
+
 export function stageGroupHeading(stage: Stage, groupLabel: string | null, matchday: number | null): string {
   if (stage === "GROUP_STAGE") {
     const md = matchday ? ` · Matchday ${matchday}` : "";

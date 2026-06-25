@@ -15,8 +15,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         rank={me?.rank ?? null}
         points={me?.totalPoints ?? 0}
       />
-      <main className="dotted-bg flex-1 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] lg:pb-0">
-        <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-10">
+      <main className="dotted-bg flex-1 overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+4.5rem)] lg:pb-0">
+        <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-10 xl:max-w-[1440px]">
           {children}
         </div>
       </main>

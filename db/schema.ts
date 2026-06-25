@@ -122,6 +122,8 @@ export const scores = pgTable(
     bracketPoints: integer("bracket_points").notNull().default(0),
     totalPoints: integer("total_points").notNull().default(0),
     exactCount: integer("exact_count").notNull().default(0), // tiebreaker
+    goalDiffCount: integer("goal_diff_count").notNull().default(0),
+    outcomeCount: integer("outcome_count").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("scores_user").on(t.userId)],
