@@ -15,7 +15,7 @@ function getDb(): DB {
   if (_db) return _db;
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set. Add it to your environment (.env.local).");
+    throw new Error("DATABASE_URL is not set. Add it to your environment (.env).");
   }
   // Integration tests run against a plain Postgres (e.g. Docker) that the Neon
   // HTTP driver can't speak to. Opt into node-postgres with DB_DRIVER=pg;

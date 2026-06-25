@@ -64,12 +64,16 @@ test("recomputeScores awards match points by tier and counts exacts", async () =
   const sa = await scoreFor(a.id);
   assert.equal(sa.matchPoints, 4 + 2, "exact + outcome");
   assert.equal(sa.exactCount, 1);
+  assert.equal(sa.goalDiffCount, 0);
+  assert.equal(sa.outcomeCount, 1);
   assert.equal(sa.bracketPoints, 0);
   assert.equal(sa.totalPoints, 6);
 
   const sb = await scoreFor(b.id);
   assert.equal(sb.matchPoints, 2 + 2, "outcome + outcome");
   assert.equal(sb.exactCount, 0);
+  assert.equal(sb.goalDiffCount, 0);
+  assert.equal(sb.outcomeCount, 2);
 
   const sc = await scoreFor(c.id);
   assert.equal(sc.matchPoints, 0);

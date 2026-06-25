@@ -7,6 +7,11 @@ const TERMINAL_STATUSES = new Set<MatchStatus>([
   "SUSPENDED",
 ]);
 
+/** True before the match has kicked off (still pickable until lock rules apply). */
+export function isMatchUnplayed(m: Pick<Match, "status">): boolean {
+  return m.status === "SCHEDULED" || m.status === "TIMED";
+}
+
 /** True while a match is underway (or kickoff has passed but the API hasn't caught up). */
 export function isMatchLive(m: Pick<Match, "kickoffAt" | "status">): boolean {
   if (m.status === "IN_PLAY" || m.status === "PAUSED") return true;

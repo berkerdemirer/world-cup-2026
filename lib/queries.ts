@@ -14,6 +14,8 @@ import {
   type Stage,
 } from "@/db/schema";
 import { computeGroupStandings, type GroupStandings } from "@/lib/group-standings";
+import { buildPredictionHistory, type HistoryItem } from "@/lib/prediction-history";
+import { getSettings } from "@/lib/scoring";
 import { KNOCKOUT_STAGES, STAGE_LABELS } from "@/lib/format";
 
 export interface MatchWithTeams extends Match {
@@ -62,6 +64,8 @@ export interface LeaderboardRow {
   matchPoints: number;
   bracketPoints: number;
   exactCount: number;
+  goalDiffCount: number;
+  outcomeCount: number;
   rank: number;
 }
 
@@ -76,6 +80,8 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
       matchPoints: scores.matchPoints,
       bracketPoints: scores.bracketPoints,
       exactCount: scores.exactCount,
+      goalDiffCount: scores.goalDiffCount,
+      outcomeCount: scores.outcomeCount,
     })
     .from(users)
     .leftJoin(scores, eq(scores.userId, users.id))
@@ -92,8 +98,29 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
     matchPoints: r.matchPoints ?? 0,
     bracketPoints: r.bracketPoints ?? 0,
     exactCount: r.exactCount ?? 0,
+    goalDiffCount: r.goalDiffCount ?? 0,
+    outcomeCount: r.outcomeCount ?? 0,
     rank: i + 1,
   }));
+}
+
+/** Settled score predictions for one player (leaderboard drill-down). */
+export async function getUserPredictionHistory(
+  userId: string,
+): Promise<{ displayName: string; history: HistoryItem[] } | null> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return null;
+
+  const [allMatches, predictions, settings] = await Promise.all([
+    getMatchesWithTeams(),
+    getUserScorePredictions(userId),
+    getSettings(),
+  ]);
+
+  return {
+    displayName: user.displayName,
+    history: buildPredictionHistory(allMatches, predictions, settings),
+  };
 }
 
 export interface MatchPredictionRow {
