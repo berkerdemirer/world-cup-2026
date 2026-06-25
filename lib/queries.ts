@@ -11,7 +11,10 @@ import {
   type Match,
   type Team,
   type BracketRound,
+  type Stage,
 } from "@/db/schema";
+import { computeGroupStandings, type GroupStandings } from "@/lib/group-standings";
+import { KNOCKOUT_STAGES, STAGE_LABELS } from "@/lib/format";
 
 export interface MatchWithTeams extends Match {
   homeTeam: Team | null;
@@ -120,6 +123,32 @@ export function isMatchLocked(m: Pick<Match, "kickoffAt" | "status">): boolean {
 
 export async function getAllTeams(): Promise<Team[]> {
   return db.select().from(teams).orderBy(asc(teams.groupLabel), asc(teams.name));
+}
+
+export async function getGroupStandings(): Promise<GroupStandings[]> {
+  const [allMatches, allTeams] = await Promise.all([getMatchesWithTeams(), getAllTeams()]);
+  return computeGroupStandings(allMatches, allTeams);
+}
+
+export interface KnockoutRound {
+  stage: Stage;
+  label: string;
+  matches: MatchWithTeams[];
+}
+
+/** Knockout fixtures grouped by round (R32 → Final). */
+export async function getKnockoutRounds(): Promise<KnockoutRound[]> {
+  const all = await getMatchesWithTeams();
+  const knockout = all.filter((m) => KNOCKOUT_STAGES.includes(m.stage));
+  const byStage = new Map<Stage, MatchWithTeams[]>();
+  for (const m of knockout) {
+    (byStage.get(m.stage) ?? byStage.set(m.stage, []).get(m.stage)!).push(m);
+  }
+  return KNOCKOUT_STAGES.filter((stage) => byStage.has(stage)).map((stage) => ({
+    stage,
+    label: STAGE_LABELS[stage],
+    matches: byStage.get(stage)!,
+  }));
 }
 
 /** The user's bracket picks grouped by round: round -> picked team ids. */

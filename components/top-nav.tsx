@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, GitFork, Trophy, SlidersHorizontal, LogOut, Target, BookOpen, type LucideIcon } from "lucide-react";
+import { CalendarDays, GitFork, Trophy, SlidersHorizontal, LogOut, Target, BookOpen, LayoutGrid, type LucideIcon } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 
 const links: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/predict/matches", label: "Fixtures", Icon: CalendarDays },
   { href: "/predict/bracket", label: "Bracket", Icon: GitFork },
+  { href: "/tournament/groups", label: "Tournament", Icon: LayoutGrid },
   { href: "/leaderboard", label: "Leaderboard", Icon: Trophy },
   { href: "/my-picks", label: "My Picks", Icon: Target },
   { href: "/how-to-play", label: "Rules", Icon: BookOpen },
@@ -25,7 +26,9 @@ export function TopNav({
   points?: number;
 }) {
   const pathname = usePathname();
-  const isActive = (href: string) => pathname.startsWith(href);
+  const isActive = (href: string) =>
+    pathname.startsWith(href) ||
+    (href === "/tournament/groups" && pathname.startsWith("/tournament"));
 
   const allLinks = isAdmin
     ? [...links, { href: "/admin", label: "Admin", Icon: SlidersHorizontal }]
