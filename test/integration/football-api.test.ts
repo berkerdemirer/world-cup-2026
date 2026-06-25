@@ -79,6 +79,8 @@ test("syncMatches maps statuses, scores, group labels and stages", async () => {
   assert.equal(m4.status, "IN_PLAY");
   assert.equal(m4.homeScore, 0);
   assert.equal(m4.awayScore, 1);
+  assert.equal(m4.minute, 67);
+  assert.equal(m4.injuryTime, null);
 
   // Not-yet-played match has null scores.
   const [m3] = await db.select().from(matches).where(eq(matches.id, 3));
@@ -150,6 +152,45 @@ test("syncMatches is idempotent — a second run updates in place", async () => 
 
   assert.equal(result.matchesUpdated, 8);
   assert.equal(first.length, second.length, "no duplicate match rows on re-sync");
+});
+
+test("syncMatches requests football-data.org v4.1 for live minute fields", async () => {
+  let apiVersion: string | undefined;
+  remock((url, init) => {
+    if (url.includes("/competitions/WC/matches")) {
+      const headers = new Headers(init?.headers);
+      apiVersion = headers.get("X-Api-Version") ?? undefined;
+      return jsonResponse(wcMatchesPayload());
+    }
+    return jsonResponse({}, 404);
+  });
+
+  await syncMatches();
+  assert.equal(apiVersion, "v4.1");
+});
+
+test("syncMatches clears minute when a match is no longer live", async () => {
+  await syncMatches();
+  const [m4] = await db.select().from(matches).where(eq(matches.id, 4));
+  assert.equal(m4.minute, 67);
+
+  remock((url) => {
+    if (url.includes("/competitions/WC/matches")) {
+      const payload = wcMatchesPayload();
+      const finished = payload.matches.find((m) => m.id === 4)!;
+      finished.status = "FINISHED";
+      (finished as { minute?: number | null; injuryTime?: number | null }).minute = 90;
+      (finished as { minute?: number | null; injuryTime?: number | null }).injuryTime = 3;
+      return jsonResponse(payload);
+    }
+    return jsonResponse({}, 404);
+  });
+
+  await syncMatches();
+  const [m4After] = await db.select().from(matches).where(eq(matches.id, 4));
+  assert.equal(m4After.status, "FINISHED");
+  assert.equal(m4After.minute, null);
+  assert.equal(m4After.injuryTime, null);
 });
 
 test("syncMatches surfaces upstream HTTP errors", async () => {

@@ -13,6 +13,18 @@ export const STAGE_LABELS: Record<Stage, string> = {
   FINAL: "Final",
 };
 
+/** Live match clock label, e.g. "67'" or "45+2'". Returns null when minute is unknown. */
+export function formatLiveMinute(match: {
+  minute: number | null;
+  injuryTime: number | null;
+}): string | null {
+  if (match.minute == null) return null;
+  if (match.injuryTime != null && match.injuryTime > 0) {
+    return `${match.minute}+${match.injuryTime}'`;
+  }
+  return `${match.minute}'`;
+}
+
 /** Knockout rounds in bracket order (excludes group stage). */
 export const KNOCKOUT_STAGES: Stage[] = [
   "LAST_32",

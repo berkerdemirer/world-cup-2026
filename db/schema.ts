@@ -69,6 +69,9 @@ export const matches = pgTable("matches", {
   awayScore: integer("away_score"),
   homePens: integer("home_pens"),
   awayPens: integer("away_pens"),
+  // Live clock from football-data.org v4.1 (null when not IN_PLAY/PAUSED).
+  minute: integer("minute"),
+  injuryTime: integer("injury_time"),
   advancingTeamId: integer("advancing_team_id").references(() => teams.id),
   source: text("source").$type<"api" | "manual">().notNull().default("api"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

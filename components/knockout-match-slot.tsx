@@ -76,7 +76,7 @@ export function KnockoutMatchSlot({ match }: { match: MatchWithTeams }) {
     >
       <div className="mb-1.5 flex items-center justify-between gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
         {live ? (
-          <LiveBadge />
+          <LiveBadge minute={match.minute} injuryTime={match.injuryTime} />
         ) : (
           <span>
             {fmtDate(kickoff)} · {fmtTime(kickoff)}

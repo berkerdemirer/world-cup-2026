@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { LiveBadge } from "@/components/live-badge";
 import { isMatchLive } from "@/lib/match-status";
+import { formatLiveMinute } from "@/lib/format";
 import type { MatchWithTeams } from "@/lib/queries";
 
 function fmtTime(d: Date): string {
@@ -82,7 +83,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
       <div className="w-full shrink-0 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:w-[88px]">
         {live ? (
           <span className="inline-flex items-center gap-1.5">
-            <LiveBadge />
+            <LiveBadge minute={match.minute} injuryTime={match.injuryTime} />
             <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>
           </span>
         ) : (
@@ -119,7 +120,9 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
             FT
           </span>
         ) : live ? (
-          <span className="text-brand-foreground">Live</span>
+          <span className="text-brand-foreground">
+            {formatLiveMinute(match) ?? "Live"}
+          </span>
         ) : (
           <span>Scheduled</span>
         )}
