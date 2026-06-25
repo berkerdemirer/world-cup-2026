@@ -314,13 +314,13 @@ function Row({
         {live ? (
           <span className="inline-flex items-center gap-1.5">
             <LiveBadge status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
-            {!liveClock && <span className="sm:mt-0.5 sm:block">{formatFixtureTime(kickoff)}</span>}
+            {!liveClock && <span suppressHydrationWarning className="sm:mt-0.5 sm:block">{formatFixtureTime(kickoff)}</span>}
           </span>
         ) : (
           <>
-            <span className="text-ink">{formatFixtureTime(kickoff)}</span>
+            <span suppressHydrationWarning className="text-ink">{formatFixtureTime(kickoff)}</span>
             <span className="sm:hidden"> · </span>
-            <span className="sm:mt-0.5 sm:block">{formatFixtureDate(kickoff, { uppercase: true })}</span>
+            <span suppressHydrationWarning className="sm:mt-0.5 sm:block">{formatFixtureDate(kickoff, { uppercase: true })}</span>
           </>
         )}
       </div>

@@ -76,20 +76,18 @@ export function fixtureDayKey(date: Date, timeZone?: string): string {
   return `d${year}${month}${day}`;
 }
 
-/** Fixture kickoff time in the host-region timezone (stable across SSR and client). */
+/** Fixture kickoff time in the viewer's local timezone (pair with suppressHydrationWarning in client UI). */
 export function formatFixtureTime(date: Date): string {
   return date.toLocaleTimeString("en-US", {
-    timeZone: FIXTURE_TZ,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
 }
 
-/** Fixture calendar date in the host-region timezone (stable across SSR and client). */
+/** Fixture calendar date in the viewer's local timezone (pair with suppressHydrationWarning in client UI). */
 export function formatFixtureDate(date: Date, options?: { uppercase?: boolean }): string {
   const label = date.toLocaleDateString("en-US", {
-    timeZone: FIXTURE_TZ,
     month: "short",
     day: "numeric",
   });

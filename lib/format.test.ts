@@ -2,13 +2,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { compareMatchesByKickoff, fixtureSectionOf, formatFixtureDate, formatFixtureTime, formatLiveMinute, formatLiveClock } from "./format";
 
-test("formatFixtureTime and formatFixtureDate use host timezone, not runtime local", () => {
-  // 9pm Eastern on Monday = Tuesday 01:00 UTC.
+test("formatFixtureTime and formatFixtureDate use runtime locale", () => {
   const kickoff = new Date("2026-06-16T01:00:00.000Z");
+  const expectedTime = kickoff.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const expectedDate = kickoff.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
-  assert.equal(formatFixtureTime(kickoff), "21:00");
-  assert.equal(formatFixtureDate(kickoff), "Jun 15");
-  assert.equal(formatFixtureDate(kickoff, { uppercase: true }), "JUN 15");
+  assert.equal(formatFixtureTime(kickoff), expectedTime);
+  assert.equal(formatFixtureDate(kickoff), expectedDate);
+  assert.equal(formatFixtureDate(kickoff, { uppercase: true }), expectedDate.toUpperCase());
 });
 
 test("compareMatchesByKickoff orders by kickoff then match id", () => {
