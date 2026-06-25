@@ -178,12 +178,12 @@ export async function recomputeScores(): Promise<void> {
   const allScorePreds = await db.select().from(scorePredictions);
   const allBracketPreds = await db.select().from(bracketPredictions);
 
-  type Agg = { match: number; bracket: number; exact: number };
+  type Agg = { match: number; bracket: number; exact: number; goalDiff: number; outcome: number };
   const byUser = new Map<string, Agg>();
   const ensure = (uid: string): Agg => {
     let a = byUser.get(uid);
     if (!a) {
-      a = { match: 0, bracket: 0, exact: 0 };
+      a = { match: 0, bracket: 0, exact: 0, goalDiff: 0, outcome: 0 };
       byUser.set(uid, a);
     }
     return a;
@@ -195,7 +195,24 @@ export async function recomputeScores(): Promise<void> {
     const tier = scoreTier(p.homeScore, p.awayScore, m.homeScore, m.awayScore);
     const agg = ensure(p.userId);
     agg.match += pointsForTier(tier, s);
-    if (tier === "exact") agg.exact += 1;
+    switch (tier) {
+      case "exact":
+        agg.exact += 1;
+        break;
+      case "goal_diff":
+        agg.goalDiff += 1;
+        break;
+      case "outcome":
+        agg.outcome += 1;
+        break;
+      case "none":
+        break;
+      default: {
+        const _exhaustive: never = tier;
+        void _exhaustive;
+        break;
+      }
+    }
   }
 
   // Bracket scoring uses a "teams that reached each round" model, which is
@@ -225,6 +242,8 @@ export async function recomputeScores(): Promise<void> {
         bracketPoints: a.bracket,
         totalPoints: a.match + a.bracket,
         exactCount: a.exact,
+        goalDiffCount: a.goalDiff,
+        outcomeCount: a.outcome,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -234,6 +253,8 @@ export async function recomputeScores(): Promise<void> {
           bracketPoints: a.bracket,
           totalPoints: a.match + a.bracket,
           exactCount: a.exact,
+          goalDiffCount: a.goalDiff,
+          outcomeCount: a.outcome,
           updatedAt: new Date(),
         },
       });
