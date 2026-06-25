@@ -135,6 +135,18 @@ test("getMatchesWithTeams joins team rows and preserves placeholders", async () 
   assert.equal(rows[1].awayTeam, null);
 });
 
+test("getMatchesWithTeams uses match id as a stable tiebreaker for identical kickoffs", async () => {
+  const kickoff = new Date("2026-06-15T18:00:00Z");
+  await seedMatch({ id: 30, kickoffAt: kickoff });
+  await seedMatch({ id: 10, kickoffAt: kickoff });
+
+  const rows = await getMatchesWithTeams();
+  assert.deepEqual(
+    rows.map((r) => r.id),
+    [10, 30],
+  );
+});
+
 test("getMatchPredictions returns everyone's picks for a match, sorted by name", async () => {
   await seedTeam(764, "Brazil");
   await seedTeam(762, "Serbia");

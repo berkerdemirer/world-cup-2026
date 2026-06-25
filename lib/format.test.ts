@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fixtureSectionOf, formatFixtureDate, formatFixtureTime, formatLiveMinute, formatLiveClock } from "./format";
+import { compareMatchesByKickoff, fixtureSectionOf, formatFixtureDate, formatFixtureTime, formatLiveMinute, formatLiveClock } from "./format";
 
 test("formatFixtureTime and formatFixtureDate use host timezone, not runtime local", () => {
   // 9pm Eastern on Monday = Tuesday 01:00 UTC.
@@ -9,6 +9,19 @@ test("formatFixtureTime and formatFixtureDate use host timezone, not runtime loc
   assert.equal(formatFixtureTime(kickoff), "21:00");
   assert.equal(formatFixtureDate(kickoff), "Jun 15");
   assert.equal(formatFixtureDate(kickoff, { uppercase: true }), "JUN 15");
+});
+
+test("compareMatchesByKickoff orders by kickoff then match id", () => {
+  const kickoff = new Date("2026-06-15T18:00:00Z");
+  const later = new Date("2026-06-15T21:00:00Z");
+
+  assert.equal(
+    compareMatchesByKickoff({ kickoffAt: kickoff, id: 20 }, { kickoffAt: kickoff, id: 10 }),
+    10,
+  );
+  assert.ok(
+    compareMatchesByKickoff({ kickoffAt: kickoff, id: 10 }, { kickoffAt: later, id: 5 }) < 0,
+  );
 });
 
 test("fixtureSectionOf groups evening kickoffs by host calendar day, not UTC", () => {

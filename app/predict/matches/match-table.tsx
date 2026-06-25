@@ -8,6 +8,7 @@ import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
 import {
   FIXTURE_TZ,
+  compareMatchesByKickoff,
   fixtureSectionOf,
   formatFixtureDate,
   formatFixtureTime,
@@ -43,7 +44,8 @@ export type TableSection = { key: string; label: string; openCount: number; rows
 function buildSections(rows: TableRow[]): TableSection[] {
   const sections: TableSection[] = [];
   const byKey = new Map<string, TableSection>();
-  for (const row of rows) {
+  const sorted = [...rows].sort((a, b) => compareMatchesByKickoff(a.match, b.match));
+  for (const row of sorted) {
     const { key, label } = fixtureSectionOf(row.match, { timeZone: FIXTURE_TZ });
     let section = byKey.get(key);
     if (!section) {

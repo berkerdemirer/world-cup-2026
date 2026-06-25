@@ -96,6 +96,16 @@ export function formatFixtureDate(date: Date, options?: { uppercase?: boolean })
   return options?.uppercase ? label.toUpperCase() : label;
 }
 
+/** Stable fixture list order: kickoff time, then football-data.org match id. */
+export function compareMatchesByKickoff(
+  a: { kickoffAt: Date | string; id: number },
+  b: { kickoffAt: Date | string; id: number },
+): number {
+  const diff = new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime();
+  if (diff !== 0) return diff;
+  return a.id - b.id;
+}
+
 /** Group-stage matches group by calendar day; knockout matches by round. */
 export function fixtureSectionOf(
   m: { stage: Stage; kickoffAt: Date | string },

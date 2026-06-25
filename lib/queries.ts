@@ -25,7 +25,10 @@ export interface MatchWithTeams extends Match {
 
 /** All matches ordered by kickoff, with home/away team rows joined in. */
 export async function getMatchesWithTeams(): Promise<MatchWithTeams[]> {
-  const rows = await db.select().from(matches).orderBy(asc(matches.kickoffAt));
+  const rows = await db
+    .select()
+    .from(matches)
+    .orderBy(asc(matches.kickoffAt), asc(matches.id));
   const teamRows = await db.select().from(teams);
   const teamById = new Map(teamRows.map((t) => [t.id, t] as const));
   return rows.map((m) => ({
