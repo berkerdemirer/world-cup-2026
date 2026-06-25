@@ -76,6 +76,26 @@ export function fixtureDayKey(date: Date, timeZone?: string): string {
   return `d${year}${month}${day}`;
 }
 
+/** Fixture kickoff time in the host-region timezone (stable across SSR and client). */
+export function formatFixtureTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    timeZone: FIXTURE_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+/** Fixture calendar date in the host-region timezone (stable across SSR and client). */
+export function formatFixtureDate(date: Date, options?: { uppercase?: boolean }): string {
+  const label = date.toLocaleDateString("en-US", {
+    timeZone: FIXTURE_TZ,
+    month: "short",
+    day: "numeric",
+  });
+  return options?.uppercase ? label.toUpperCase() : label;
+}
+
 /** Group-stage matches group by calendar day; knockout matches by round. */
 export function fixtureSectionOf(
   m: { stage: Stage; kickoffAt: Date | string },

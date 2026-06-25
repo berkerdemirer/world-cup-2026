@@ -6,7 +6,13 @@ import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
 import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
-import { fixtureSectionOf, formatLiveClock } from "@/lib/format";
+import {
+  FIXTURE_TZ,
+  fixtureSectionOf,
+  formatFixtureDate,
+  formatFixtureTime,
+  formatLiveClock,
+} from "@/lib/format";
 import { isMatchLive } from "@/lib/match-status";
 import { cn } from "@/lib/utils";
 import type { MatchWithTeams } from "@/lib/queries";
@@ -26,13 +32,6 @@ function randomGoals(): number {
   return 0;
 }
 
-function fmtDate(d: Date): string {
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
-}
-function fmtTime(d: Date): string {
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-}
-
 export type TableRow = {
   match: MatchWithTeams;
   prediction: { homeScore: number; awayScore: number } | null;
@@ -45,7 +44,7 @@ function buildSections(rows: TableRow[]): TableSection[] {
   const sections: TableSection[] = [];
   const byKey = new Map<string, TableSection>();
   for (const row of rows) {
-    const { key, label } = fixtureSectionOf(row.match);
+    const { key, label } = fixtureSectionOf(row.match, { timeZone: FIXTURE_TZ });
     let section = byKey.get(key);
     if (!section) {
       section = { key, label, openCount: 0, rows: [] };
@@ -313,13 +312,13 @@ function Row({
         {live ? (
           <span className="inline-flex items-center gap-1.5">
             <LiveBadge status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
-            {!liveClock && <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>}
+            {!liveClock && <span className="sm:mt-0.5 sm:block">{formatFixtureTime(kickoff)}</span>}
           </span>
         ) : (
           <>
-            <span className="text-ink">{fmtTime(kickoff)}</span>
+            <span className="text-ink">{formatFixtureTime(kickoff)}</span>
             <span className="sm:hidden"> · </span>
-            <span className="sm:mt-0.5 sm:block">{fmtDate(kickoff)}</span>
+            <span className="sm:mt-0.5 sm:block">{formatFixtureDate(kickoff, { uppercase: true })}</span>
           </>
         )}
       </div>
