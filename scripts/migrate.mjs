@@ -6,8 +6,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { applyMigrations } from "../lib/migrate-db.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -19,8 +18,7 @@ async function main() {
 
   const pool = new Pool({ connectionString: url });
   try {
-    const db = drizzle(pool);
-    await migrate(db, { migrationsFolder: path.join(root, "db/migrations") });
+    await applyMigrations(pool, path.join(root, "db/migrations"));
     console.log("Database migrations applied.");
   } finally {
     await pool.end();

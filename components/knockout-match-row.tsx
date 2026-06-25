@@ -62,6 +62,7 @@ function TeamSide({
 export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
   const kickoff = new Date(match.kickoffAt);
   const live = isMatchLive(match);
+  const liveClock = live ? formatLiveMinute(match) : null;
   const hasScore = match.homeScore != null && match.awayScore != null;
   const finished = match.status === "FINISHED" && hasScore;
   const homeWinner =
@@ -84,7 +85,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
         {live ? (
           <span className="inline-flex items-center gap-1.5">
             <LiveBadge minute={match.minute} injuryTime={match.injuryTime} />
-            <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>
+            {!liveClock && <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>}
           </span>
         ) : (
           <>

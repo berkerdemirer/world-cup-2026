@@ -1,8 +1,6 @@
 import "server-only";
 import path from "node:path";
 import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 
 let pending: Promise<void> | null = null;
 
@@ -18,8 +16,8 @@ export function runMigrations(): Promise<void> {
 
     const pool = new Pool({ connectionString: url });
     try {
-      const db = drizzle(pool);
-      await migrate(db, { migrationsFolder: path.join(process.cwd(), "db/migrations") });
+      const { applyMigrations } = await import("./migrate-db.mjs");
+      await applyMigrations(pool, path.join(process.cwd(), "db/migrations"));
     } finally {
       await pool.end();
     }

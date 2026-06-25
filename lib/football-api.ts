@@ -83,6 +83,24 @@ function groupLabel(group: string | null): string | null {
   return group.replace(/^GROUP_/, "");
 }
 
+function isApiMatchLive(m: Pick<ApiMatch, "status">): boolean {
+  return m.status === "IN_PLAY" || m.status === "PAUSED";
+}
+
+/**
+ * The competition match list often omits `minute`/`injuryTime` even with
+ * X-Api-Version v4.1; the single-match resource includes them for live games.
+ */
+async function enrichLiveMatchClock(m: ApiMatch): Promise<ApiMatch> {
+  if (!isApiMatchLive(m) || m.minute != null || m.injuryTime != null) return m;
+  const detail = await apiGet<ApiMatch>(`/matches/${m.id}`);
+  return {
+    ...m,
+    minute: detail.minute ?? null,
+    injuryTime: detail.injuryTime ?? null,
+  };
+}
+
 /** Resolve which team advanced from a knockout match, including penalties. */
 function advancingTeam(m: ApiMatch): number | null {
   if (m.stage === "GROUP_STAGE") return null;
@@ -139,6 +157,7 @@ export interface SyncResult {
  */
 export async function syncMatches(): Promise<SyncResult> {
   const data = await apiGet<{ matches: ApiMatch[] }>(`/competitions/${COMPETITION}/matches`);
+  const apiMatches = await Promise.all(data.matches.map((m) => enrichLiveMatchClock(m)));
 
   let updated = 0;
   let manualSkipped = 0;
@@ -149,7 +168,7 @@ export async function syncMatches(): Promise<SyncResult> {
     .from(matches);
   const sourceById = new Map(existing.map((e) => [e.id, e.source] as const));
 
-  for (const m of data.matches) {
+  for (const m of apiMatches) {
     if (sourceById.get(m.id) === "manual") {
       manualSkipped++;
       continue;
@@ -159,7 +178,7 @@ export async function syncMatches(): Promise<SyncResult> {
     const awayTeamId = await upsertTeam(m.awayTeam);
 
     const stage = normalizeStage(m.stage);
-    const live = m.status === "IN_PLAY" || m.status === "PAUSED";
+    const live = isApiMatchLive(m);
 
     const values = {
       id: m.id,
@@ -215,7 +234,7 @@ export async function syncMatches(): Promise<SyncResult> {
 
   await recomputeScores();
 
-  return { matchesSeen: data.matches.length, matchesUpdated: updated, manualSkipped };
+  return { matchesSeen: apiMatches.length, matchesUpdated: updated, manualSkipped };
 }
 
 export interface MaybeSyncResult {

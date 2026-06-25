@@ -313,7 +313,7 @@ function Row({
         {live ? (
           <span className="inline-flex items-center gap-1.5">
             <LiveBadge minute={match.minute} injuryTime={match.injuryTime} />
-            <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>
+            {!liveClock && <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>}
           </span>
         ) : (
           <>
