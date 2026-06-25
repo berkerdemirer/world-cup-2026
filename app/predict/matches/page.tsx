@@ -1,9 +1,7 @@
-import { Suspense } from "react";
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/session";
 import { getMatchesWithTeams, getUserScorePredictions, isMatchLocked } from "@/lib/queries";
 import { isMatchUnplayed } from "@/lib/match-status";
-import { buildPredictionHistory } from "@/lib/prediction-history";
 import { getSettings } from "@/lib/scoring";
 import { PageHeader } from "@/components/page-header";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -33,7 +31,6 @@ export default async function FixturesPage() {
   }));
   const totalUnplayed = rows.filter((r) => isMatchUnplayed(r.match)).length;
   const pickable = rows.filter((r) => !r.locked).length;
-  const history = buildPredictionHistory(allMatches, predictions, settings);
 
   return (
     <AppShell>
@@ -47,7 +44,7 @@ export default async function FixturesPage() {
               ? pickable > 0
                 ? `${totalUnplayed} upcoming · ${pickable} still open for picks`
                 : `${totalUnplayed} upcoming match${totalUnplayed === 1 ? "" : "es"}`
-              : "No upcoming matches — browse results in History"
+              : "No upcoming matches — see your results in My Picks"
         }
         right={
           <Link
@@ -63,9 +60,7 @@ export default async function FixturesPage() {
       {allMatches.length === 0 ? (
         <EmptyState />
       ) : (
-        <Suspense fallback={<FixturesLoading />}>
-          <FixturesView rows={rows} points={points} history={history} unplayedCount={totalUnplayed} />
-        </Suspense>
+        <FixturesView rows={rows} points={points} />
       )}
     </AppShell>
   );
@@ -76,15 +71,6 @@ function EmptyState() {
     <div className="rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center text-muted-foreground">
       No fixtures loaded yet. An admin needs to run a data sync from the{" "}
       <span className="font-medium text-ink">Admin → Sync</span> panel.
-    </div>
-  );
-}
-
-function FixturesLoading() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="h-12 animate-pulse rounded-2xl bg-card ring-1 ring-black/5" />
-      <div className="h-40 animate-pulse rounded-2xl bg-card ring-1 ring-black/5" />
     </div>
   );
 }
