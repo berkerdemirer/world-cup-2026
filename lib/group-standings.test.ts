@@ -28,6 +28,8 @@ function match(
     awayScore: 0,
     homePens: null,
     awayPens: null,
+    minute: null,
+    injuryTime: null,
     advancingTeamId: null,
     source: "api",
     updatedAt: new Date(),

@@ -56,7 +56,7 @@ Postgres · iron-session · Zod. Deploys to Vercel.
 | Command | Description |
 | --- | --- |
 | `pnpm dev` | Start the dev server |
-| `pnpm build` / `pnpm start` | Production build / serve |
+| `pnpm build` / `pnpm start` | Production build (runs migrations first) / serve |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | ESLint |
 | `pnpm test` | Unit tests for the scoring logic |
@@ -69,7 +69,7 @@ Postgres · iron-session · Zod. Deploys to Vercel.
 ## Deploying to Vercel
 
 1. Import the repo into Vercel and set the four env vars (`DATABASE_URL`, `FOOTBALL_DATA_TOKEN`, `SESSION_PASSWORD`, `CRON_SECRET`).
-2. Run `pnpm db:push` against the production DB (or `db:migrate`), then `pnpm seed`.
+2. Deploy — `pnpm build` applies pending Drizzle migrations against `DATABASE_URL` before `next build`. Run `pnpm seed` once on a fresh database. Make sure `DATABASE_URL` is available to the Vercel build (Production, and Preview if you use it).
 3. `vercel.json` registers a **daily cron** that calls `/api/cron/sync`. On the Hobby
    plan crons run once per day — during the tournament you can either hit
    **Admin → Sync now** manually on match days, or point a free external scheduler

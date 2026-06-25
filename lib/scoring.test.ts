@@ -81,6 +81,8 @@ function m(partial: Partial<Match>): Match {
     awayScore: null,
     homePens: null,
     awayPens: null,
+    minute: null,
+    injuryTime: null,
     advancingTeamId: null,
     source: "api",
     updatedAt: new Date(),

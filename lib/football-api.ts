@@ -25,6 +25,8 @@ interface ApiMatch {
   id: number;
   utcDate: string;
   status: string;
+  minute?: number | null;
+  injuryTime?: number | null;
   matchday: number | null;
   stage: string;
   group: string | null;
@@ -47,7 +49,11 @@ function token(): string {
 
 async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "X-Auth-Token": token() },
+    headers: {
+      "X-Auth-Token": token(),
+      // v4.1 adds live `minute` and `injuryTime` on in-play matches.
+      "X-Api-Version": "v4.1",
+    },
     // Always fetch fresh data for the sync job.
     cache: "no-store",
   });
@@ -153,6 +159,7 @@ export async function syncMatches(): Promise<SyncResult> {
     const awayTeamId = await upsertTeam(m.awayTeam);
 
     const stage = normalizeStage(m.stage);
+    const live = m.status === "IN_PLAY" || m.status === "PAUSED";
 
     const values = {
       id: m.id,
@@ -171,6 +178,8 @@ export async function syncMatches(): Promise<SyncResult> {
       awayScore: m.score.fullTime.away ?? null,
       homePens: m.score.penalties?.home ?? null,
       awayPens: m.score.penalties?.away ?? null,
+      minute: live ? (m.minute ?? null) : null,
+      injuryTime: live ? (m.injuryTime ?? null) : null,
       advancingTeamId: advancingTeam(m),
       source: "api" as const,
       updatedAt: new Date(),
@@ -195,6 +204,8 @@ export async function syncMatches(): Promise<SyncResult> {
           awayScore: values.awayScore,
           homePens: values.homePens,
           awayPens: values.awayPens,
+          minute: values.minute,
+          injuryTime: values.injuryTime,
           advancingTeamId: values.advancingTeamId,
           updatedAt: values.updatedAt,
         },

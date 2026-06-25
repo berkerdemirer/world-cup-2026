@@ -86,6 +86,8 @@ export function wcMatchesPayload(now = new Date("2026-06-15T00:00:00Z")) {
         id: 4,
         utcDate: hrs(-1),
         status: "IN_PLAY",
+        minute: 67,
+        injuryTime: null,
         matchday: 2,
         stage: "GROUP_STAGE",
         group: "GROUP_B",

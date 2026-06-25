@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm db:migrate && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -13,7 +13,7 @@
     "test:smoke": "node --conditions=react-server --import tsx scripts/smoke-test.ts",
     "test:all": "pnpm test && pnpm test:integration",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node scripts/migrate.mjs",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx scripts/seed.ts"
@@ -30,6 +30,7 @@
     "iron-session": "^8.0.4",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
+    "pg": "^8.21.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.10.0",
@@ -48,7 +49,6 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
-    "pg": "^8.21.0",
     "server-only": "^0.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",

@@ -16,4 +16,5 @@ Non-obvious setup/run notes (the update script only runs `pnpm install`):
 - **Login is always room-gated.** `lib/room.ts` `isRoomGated()` always returns `true`, so nobody can log in unless a room key is configured. Set `ROOM_PASSWORD` in `.env` (or set it in Admin → Settings). The current `.env` uses `ROOM_PASSWORD=worldcup`.
 - **Admin account.** `pnpm seed` creates admins from `ADMIN_NAMES` with **no PIN**; the first login for that display name claims the account by setting its PIN. Current seed uses `ADMIN_NAMES=Admin`, so log in as `Admin` with any 4–8 digit PIN plus the room key.
 - **Fixtures/sync** need a real `FOOTBALL_DATA_TOKEN` from football-data.org; without it the app runs but Admin → Sync and live scores won't load real matches.
+- **Deploy migrations.** `pnpm build` runs `pnpm db:migrate` first, so Vercel applies pending Drizzle migrations on every deploy as long as `DATABASE_URL` is set for the build environment.
 - **Smoke test** (`pnpm test:smoke`) needs a separate live Neon `DATABASE_TEST_URL` and is not run in this environment.

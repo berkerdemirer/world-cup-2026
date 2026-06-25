@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fixtureSectionOf } from "./format";
+import { fixtureSectionOf, formatLiveMinute } from "./format";
 
 test("fixtureSectionOf groups evening kickoffs by host calendar day, not UTC", () => {
   // 9pm Eastern on Monday = Tuesday 01:00 UTC — common "night game" boundary.
@@ -28,4 +28,16 @@ test("fixtureSectionOf leaves knockout matches grouped by stage", () => {
   });
   assert.equal(section.key, "LAST_16");
   assert.equal(section.label, "Round of 16");
+});
+
+test("formatLiveMinute renders regulation minutes", () => {
+  assert.equal(formatLiveMinute({ minute: 67, injuryTime: null }), "67'");
+});
+
+test("formatLiveMinute renders stoppage time", () => {
+  assert.equal(formatLiveMinute({ minute: 45, injuryTime: 2 }), "45+2'");
+});
+
+test("formatLiveMinute returns null when minute is unknown", () => {
+  assert.equal(formatLiveMinute({ minute: null, injuryTime: null }), null);
 });
