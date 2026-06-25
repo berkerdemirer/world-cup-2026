@@ -51,12 +51,20 @@ function SortableHeader({
         title={title}
         onClick={() => onSort(sortKey)}
         className={cn(
-          "inline-flex items-center gap-1 rounded-md outline-none transition hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50",
+          "group inline-flex items-center gap-1 rounded-md outline-none transition hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50",
           active ? "text-ink" : "text-muted-foreground",
         )}
       >
         <span>{label}</span>
-        <SortIcon className={cn("size-3 shrink-0", active ? "opacity-100" : "opacity-40")} />
+        <SortIcon
+          strokeWidth={2.5}
+          className={cn(
+            "size-3.5 shrink-0 transition-colors",
+            active
+              ? "text-brand"
+              : "text-ink/55 group-hover:text-ink/80",
+          )}
+        />
       </button>
     </th>
   );
