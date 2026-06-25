@@ -1,19 +1,23 @@
 import { cn } from "@/lib/utils";
-import { formatLiveMinute } from "@/lib/format";
+import { formatLiveClock } from "@/lib/format";
+import type { MatchStatus } from "@/db/schema";
 
 export function LiveBadge({
+  status,
   minute,
   injuryTime,
   className,
 }: {
+  status: MatchStatus;
   minute?: number | null;
   injuryTime?: number | null;
   className?: string;
 }) {
-  const clock =
-    minute != null || injuryTime != null
-      ? formatLiveMinute({ minute: minute ?? null, injuryTime: injuryTime ?? null })
-      : null;
+  const clock = formatLiveClock({
+    status,
+    minute: minute ?? null,
+    injuryTime: injuryTime ?? null,
+  });
 
   return (
     <span

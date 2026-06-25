@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { LiveBadge } from "@/components/live-badge";
 import { isMatchLive } from "@/lib/match-status";
-import { formatLiveMinute } from "@/lib/format";
+import { formatLiveClock } from "@/lib/format";
 import type { MatchWithTeams } from "@/lib/queries";
 
 function fmtTime(d: Date): string {
@@ -62,7 +62,7 @@ function TeamSide({
 export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
   const kickoff = new Date(match.kickoffAt);
   const live = isMatchLive(match);
-  const liveClock = live ? formatLiveMinute(match) : null;
+  const liveClock = live ? formatLiveClock(match) : null;
   const hasScore = match.homeScore != null && match.awayScore != null;
   const finished = match.status === "FINISHED" && hasScore;
   const homeWinner =
@@ -84,7 +84,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
       <div className="w-full shrink-0 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:w-[88px]">
         {live ? (
           <span className="inline-flex items-center gap-1.5">
-            <LiveBadge minute={match.minute} injuryTime={match.injuryTime} />
+            <LiveBadge status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
             {!liveClock && <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>}
           </span>
         ) : (
@@ -122,7 +122,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
           </span>
         ) : live ? (
           <span className="text-brand-foreground">
-            {formatLiveMinute(match) ?? "Live"}
+            {formatLiveClock(match) ?? "Live"}
           </span>
         ) : (
           <span>Scheduled</span>

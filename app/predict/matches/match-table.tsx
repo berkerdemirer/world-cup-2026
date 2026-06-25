@@ -6,7 +6,7 @@ import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
 import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
-import { fixtureSectionOf, formatLiveMinute } from "@/lib/format";
+import { fixtureSectionOf, formatLiveClock } from "@/lib/format";
 import { isMatchLive } from "@/lib/match-status";
 import { cn } from "@/lib/utils";
 import type { MatchWithTeams } from "@/lib/queries";
@@ -214,7 +214,7 @@ function Row({
   const { match, prediction, locked } = row;
   const kickoff = new Date(match.kickoffAt);
   const live = isMatchLive(match);
-  const liveClock = live ? formatLiveMinute(match) : null;
+  const liveClock = live ? formatLiveClock(match) : null;
   const hasScore = match.homeScore != null && match.awayScore != null;
   const settled = match.status === "FINISHED" && hasScore;
 
@@ -312,7 +312,7 @@ function Row({
       <div className="order-1 shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wide text-muted-foreground">
         {live ? (
           <span className="inline-flex items-center gap-1.5">
-            <LiveBadge minute={match.minute} injuryTime={match.injuryTime} />
+            <LiveBadge status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
             {!liveClock && <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>}
           </span>
         ) : (

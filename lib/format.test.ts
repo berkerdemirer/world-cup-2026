@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fixtureSectionOf, formatLiveMinute } from "./format";
+import { fixtureSectionOf, formatLiveMinute, formatLiveClock } from "./format";
 
 test("fixtureSectionOf groups evening kickoffs by host calendar day, not UTC", () => {
   // 9pm Eastern on Monday = Tuesday 01:00 UTC — common "night game" boundary.
@@ -40,4 +40,18 @@ test("formatLiveMinute renders stoppage time", () => {
 
 test("formatLiveMinute returns null when minute is unknown", () => {
   assert.equal(formatLiveMinute({ minute: null, injuryTime: null }), null);
+});
+
+test("formatLiveClock shows HT when the match is paused for half-time", () => {
+  assert.equal(
+    formatLiveClock({ status: "PAUSED", minute: 45, injuryTime: 3 }),
+    "HT",
+  );
+});
+
+test("formatLiveClock shows the minute while the match is in play", () => {
+  assert.equal(
+    formatLiveClock({ status: "IN_PLAY", minute: 67, injuryTime: null }),
+    "67'",
+  );
 });

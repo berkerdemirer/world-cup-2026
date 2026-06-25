@@ -50,7 +50,7 @@ export default async function MatchDetailPage({
         </div>
         <div className="text-center">
           {live && (
-            <LiveBadge className="mb-2 justify-center" minute={match.minute} injuryTime={match.injuryTime} />
+            <LiveBadge className="mb-2 justify-center" status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
           )}
           <div className="font-mono text-2xl font-bold text-slate-900">
             {finished || live

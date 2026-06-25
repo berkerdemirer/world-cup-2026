@@ -1,4 +1,4 @@
-import type { Stage } from "@/db/schema";
+import type { MatchStatus, Stage } from "@/db/schema";
 
 /** Host-region timezone for server-rendered fixture day headers (WC 2026). */
 export const FIXTURE_TZ = "America/New_York";
@@ -23,6 +23,16 @@ export function formatLiveMinute(match: {
     return `${match.minute}+${match.injuryTime}'`;
   }
   return `${match.minute}'`;
+}
+
+/** Live label for badges — shows HT during the break, otherwise the match clock. */
+export function formatLiveClock(match: {
+  status: MatchStatus;
+  minute: number | null;
+  injuryTime: number | null;
+}): string | null {
+  if (match.status === "PAUSED") return "HT";
+  return formatLiveMinute(match);
 }
 
 /** Knockout rounds in bracket order (excludes group stage). */
