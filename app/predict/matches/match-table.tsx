@@ -310,10 +310,10 @@ function Row({
     >
       <div className="order-1 shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wide text-muted-foreground">
         {live ? (
-          <>
+          <span className="inline-flex items-center gap-1.5">
             <LiveBadge />
             <span className="sm:mt-0.5 sm:block">{fmtTime(kickoff)}</span>
-          </>
+          </span>
         ) : (
           <>
             <span className="text-ink">{fmtTime(kickoff)}</span>
