@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { Check, ChevronDown, Loader2, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
 import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
@@ -58,25 +58,14 @@ function buildSections(rows: TableRow[]): TableSection[] {
   return sections;
 }
 
-export type MatchTableMode = "open" | "all";
-
 export function MatchTable({
   rows,
   points,
-  mode = "all",
-  collapseLockedSections = false,
 }: {
   rows: TableRow[];
   points: MatchPoints;
-  mode?: MatchTableMode;
-  collapseLockedSections?: boolean;
 }) {
-  const visibleRows = useMemo(
-    () => (mode === "open" ? rows.filter((r) => !r.locked) : rows),
-    [mode, rows],
-  );
-  // Group by the viewer's local calendar day so section headers match row kickoff times.
-  const sections = useMemo(() => buildSections(visibleRows), [visibleRows]);
+  const sections = useMemo(() => buildSections(rows), [rows]);
   // Bumping this nonce signals every open, un-picked row to roll a random score.
   const [luckyNonce, setLuckyNonce] = useState(0);
   // Count of rows currently saving a lucky pick — drives the button's spinner.
@@ -91,18 +80,18 @@ export function MatchTable({
     0,
   );
 
-  if (mode === "open" && sections.length === 0) {
+  if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center text-muted-foreground">
-        No matches are open for predictions right now. Check back later or browse the full
-        schedule in the Fixtures tab.
+        No upcoming matches right now. Check back when new fixtures are scheduled or browse
+        results in History.
       </div>
     );
   }
 
   return (
     <>
-      {mode === "open" && openEmpty > 0 && (
+      {openEmpty > 0 && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card/60 px-4 py-3">
           <p className="text-sm font-medium text-ink/80">
             Don&apos;t want to fill in every match? Roll random scores for the{" "}
@@ -134,7 +123,6 @@ export function MatchTable({
             points={points}
             luckyNonce={luckyNonce}
             registerFill={registerFill}
-            collapseLockedSections={collapseLockedSections}
           />
         ))}
       </div>
@@ -147,18 +135,12 @@ function SectionCard({
   points,
   luckyNonce,
   registerFill,
-  collapseLockedSections,
 }: {
   section: TableSection;
   points: MatchPoints;
   luckyNonce: number;
   registerFill: (delta: number) => void;
-  collapseLockedSections: boolean;
 }) {
-  const isFullyLocked = section.openCount === 0;
-  const collapsible = collapseLockedSections && isFullyLocked;
-  const [expanded, setExpanded] = useState(!collapsible);
-
   const header = (
     <>
       <span className="text-ink">{section.label}</span>
@@ -172,37 +154,20 @@ function SectionCard({
 
   return (
     <div className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-black/5">
-      {collapsible ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="flex w-full items-center justify-between gap-3 bg-cream px-4 py-2 text-left text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:bg-line/40"
-        >
-          <span>{header}</span>
-          <ChevronDown
-            className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")}
-            strokeWidth={2.5}
+      <div className="bg-cream px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+        {header}
+      </div>
+      <div className="divide-y divide-line">
+        {section.rows.map((r) => (
+          <Row
+            key={r.match.id}
+            row={r}
+            points={points}
+            luckyNonce={luckyNonce}
+            registerFill={registerFill}
           />
-        </button>
-      ) : (
-        <div className="bg-cream px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-          {header}
-        </div>
-      )}
-      {expanded && (
-        <div className="divide-y divide-line">
-          {section.rows.map((r) => (
-            <Row
-              key={r.match.id}
-              row={r}
-              points={points}
-              luckyNonce={luckyNonce}
-              registerFill={registerFill}
-            />
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }

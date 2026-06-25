@@ -4,42 +4,47 @@ import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PredictionHistoryList } from "@/components/prediction-history-list";
 import type { HistoryItem } from "@/lib/prediction-history";
+import { isMatchUnplayed } from "@/lib/match-status";
 import { cn } from "@/lib/utils";
 import { MatchTable, type MatchPoints, type TableRow } from "./match-table";
 
-export type FixturesTab = "open" | "fixtures" | "history";
+export type FixturesTab = "upcoming" | "history";
 
 const TABS: { id: FixturesTab; label: string }[] = [
-  { id: "open", label: "Open" },
-  { id: "fixtures", label: "Fixtures" },
+  { id: "upcoming", label: "Upcoming" },
   { id: "history", label: "History" },
 ];
 
 function parseTab(value: string | null): FixturesTab {
-  if (value === "fixtures" || value === "history") return value;
-  return "open";
+  if (value === "history") return "history";
+  return "upcoming";
 }
 
 export function FixturesView({
   rows,
   points,
   history,
-  openCount,
+  unplayedCount,
 }: {
   rows: TableRow[];
   points: MatchPoints;
   history: HistoryItem[];
-  openCount: number;
+  unplayedCount: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = useMemo(() => parseTab(searchParams.get("tab")), [searchParams]);
 
+  const upcomingRows = useMemo(
+    () => rows.filter((r) => isMatchUnplayed(r.match)),
+    [rows],
+  );
+
   const selectTab = useCallback(
     (next: FixturesTab) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (next === "open") {
+      if (next === "upcoming") {
         params.delete("tab");
       } else {
         params.set("tab", next);
@@ -59,8 +64,7 @@ export function FixturesView({
       >
         {TABS.map(({ id, label }) => {
           const active = activeTab === id;
-          const count =
-            id === "open" ? openCount : id === "history" ? history.length : rows.length;
+          const count = id === "upcoming" ? unplayedCount : history.length;
           return (
             <button
               key={id}
@@ -91,10 +95,7 @@ export function FixturesView({
         })}
       </div>
 
-      {activeTab === "open" && <MatchTable rows={rows} points={points} mode="open" />}
-      {activeTab === "fixtures" && (
-        <MatchTable rows={rows} points={points} mode="all" collapseLockedSections />
-      )}
+      {activeTab === "upcoming" && <MatchTable rows={upcomingRows} points={points} />}
       {activeTab === "history" && <PredictionHistoryList items={history} />}
     </div>
   );

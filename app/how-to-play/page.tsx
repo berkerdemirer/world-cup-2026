@@ -128,7 +128,7 @@ export default async function HowToPlayPage() {
         <p className="text-sm leading-relaxed">
           <span className="font-semibold">Short on time?</span> Hit{" "}
           <span className="font-semibold text-brand">&ldquo;I&rsquo;m feeling lucky&rdquo;</span> on
-          Fixtures to auto-fill every open match, then tweak.
+          Fixtures to auto-fill every match you can still pick, then tweak.
         </p>
       </div>
     </AppShell>

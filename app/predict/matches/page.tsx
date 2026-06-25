@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/session";
 import { getMatchesWithTeams, getUserScorePredictions, isMatchLocked } from "@/lib/queries";
+import { isMatchUnplayed } from "@/lib/match-status";
 import { buildPredictionHistory } from "@/lib/prediction-history";
 import { getSettings } from "@/lib/scoring";
 import { PageHeader } from "@/components/page-header";
@@ -30,7 +31,8 @@ export default async function FixturesPage() {
     prediction: predictions.get(m.id) ?? null,
     locked: isMatchLocked(m),
   }));
-  const totalOpen = rows.filter((r) => !r.locked).length;
+  const totalUnplayed = rows.filter((r) => isMatchUnplayed(r.match)).length;
+  const pickable = rows.filter((r) => !r.locked).length;
   const history = buildPredictionHistory(allMatches, predictions, settings);
 
   return (
@@ -41,9 +43,11 @@ export default async function FixturesPage() {
         subtitle={
           allMatches.length === 0
             ? "No fixtures loaded yet"
-            : totalOpen > 0
-              ? `${totalOpen} match${totalOpen === 1 ? "" : "es"} open for predictions`
-              : "All matches locked — browse results in History"
+            : totalUnplayed > 0
+              ? pickable > 0
+                ? `${totalUnplayed} upcoming · ${pickable} still open for picks`
+                : `${totalUnplayed} upcoming match${totalUnplayed === 1 ? "" : "es"}`
+              : "No upcoming matches — browse results in History"
         }
         right={
           <Link
@@ -60,7 +64,7 @@ export default async function FixturesPage() {
         <EmptyState />
       ) : (
         <Suspense fallback={<FixturesLoading />}>
-          <FixturesView rows={rows} points={points} history={history} openCount={totalOpen} />
+          <FixturesView rows={rows} points={points} history={history} unplayedCount={totalUnplayed} />
         </Suspense>
       )}
     </AppShell>
