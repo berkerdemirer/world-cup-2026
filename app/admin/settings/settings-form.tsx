@@ -72,7 +72,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         </div>
         <p className="mt-1 text-xs text-slate-400">
           The live dashboard hits football-data.org at most once per this interval, no matter how
-          many players have the app open. 30s ≈ 2 calls/min.
+          many players have the app open. 5s = 12/min, 10s = 6/min, 30s = 2/min (limit: 20/min).
         </p>
       </section>
 

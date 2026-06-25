@@ -91,7 +91,7 @@ const settingsSchema = z.object({
   ptsBracketSf: z.coerce.number().int().min(0).max(100),
   ptsBracketFinal: z.coerce.number().int().min(0).max(100),
   ptsBracketWinner: z.coerce.number().int().min(0).max(100),
-  liveSyncSeconds: z.coerce.number().int().min(10).max(3600),
+  liveSyncSeconds: z.coerce.number().int().min(5).max(3600),
   // Empty input clears the override so the lock derives from the first knockout
   // kickoff; a datetime-local value (local time) sets an explicit lock.
   bracketLockAt: z
