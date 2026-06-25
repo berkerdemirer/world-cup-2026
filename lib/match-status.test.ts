@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isMatchLive, isMatchUnplayed } from "./match-status";
+import { isFixtureActive, isMatchLive, isMatchUnplayed } from "./match-status";
 
 const kickoff = new Date("2026-06-15T18:00:00.000Z");
 
@@ -26,4 +26,14 @@ test("isMatchLive treats post-kickoff TIMED matches as live until the API update
   const past = new Date(Date.now() - 3_600_000);
   assert.equal(isMatchLive({ status: "TIMED", kickoffAt: future }), false);
   assert.equal(isMatchLive({ status: "TIMED", kickoffAt: past }), true);
+});
+
+test("isFixtureActive includes upcoming and live matches but not finished results", () => {
+  const future = new Date(Date.now() + 3_600_000);
+  const past = new Date(Date.now() - 3_600_000);
+  assert.equal(isFixtureActive({ status: "SCHEDULED", kickoffAt: future }), true);
+  assert.equal(isFixtureActive({ status: "TIMED", kickoffAt: future }), true);
+  assert.equal(isFixtureActive({ status: "IN_PLAY", kickoffAt: past }), true);
+  assert.equal(isFixtureActive({ status: "TIMED", kickoffAt: past }), true);
+  assert.equal(isFixtureActive({ status: "FINISHED", kickoffAt: past }), false);
 });

@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/session";
 import { getMatchesWithTeams, getUserScorePredictions, isMatchLocked } from "@/lib/queries";
-import { isMatchUnplayed } from "@/lib/match-status";
+import { isFixtureActive, isMatchLive, isMatchUnplayed } from "@/lib/match-status";
 import { getSettings } from "@/lib/scoring";
 import { PageHeader } from "@/components/page-header";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -29,7 +29,9 @@ export default async function FixturesPage() {
     prediction: predictions.get(m.id) ?? null,
     locked: isMatchLocked(m),
   }));
+  const totalActive = rows.filter((r) => isFixtureActive(r.match)).length;
   const totalUnplayed = rows.filter((r) => isMatchUnplayed(r.match)).length;
+  const liveCount = rows.filter((r) => isMatchLive(r.match)).length;
   const pickable = rows.filter((r) => !r.locked).length;
 
   return (
@@ -40,10 +42,16 @@ export default async function FixturesPage() {
         subtitle={
           allMatches.length === 0
             ? "No fixtures loaded yet"
-            : totalUnplayed > 0
-              ? pickable > 0
-                ? `${totalUnplayed} upcoming · ${pickable} still open for picks`
-                : `${totalUnplayed} upcoming match${totalUnplayed === 1 ? "" : "es"}`
+            : totalActive > 0
+              ? [
+                  liveCount > 0 ? `${liveCount} live` : null,
+                  totalUnplayed > 0
+                    ? `${totalUnplayed} upcoming`
+                    : null,
+                  pickable > 0 ? `${pickable} open for picks` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
               : "No upcoming matches — see your results in My Picks"
         }
         right={

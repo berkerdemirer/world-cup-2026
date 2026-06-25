@@ -18,3 +18,8 @@ export function isMatchLive(m: Pick<Match, "kickoffAt" | "status">): boolean {
   if (TERMINAL_STATUSES.has(m.status)) return false;
   return Date.now() >= new Date(m.kickoffAt).getTime();
 }
+
+/** True for upcoming picks and live games — the fixtures schedule, not finished results. */
+export function isFixtureActive(m: Pick<Match, "kickoffAt" | "status">): boolean {
+  return isMatchUnplayed(m) || isMatchLive(m);
+}

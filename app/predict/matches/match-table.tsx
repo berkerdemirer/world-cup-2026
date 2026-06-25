@@ -83,8 +83,8 @@ export function MatchTable({
   if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center text-muted-foreground">
-        No upcoming matches right now. Check back when new fixtures are scheduled or browse
-        results in History.
+        No upcoming or live matches right now. Check back when new fixtures are scheduled or
+        browse your results in My Picks.
       </div>
     );
   }
