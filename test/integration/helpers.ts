@@ -154,3 +154,22 @@ export function jsonResponse(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json" },
   });
 }
+
+/** Shared football-data.org mock used by sync and cron integration tests. */
+export function mockFootballApi(payload: { matches: unknown[] }) {
+  return mockFetch((url) => {
+    if (url.includes("/competitions/WC/matches")) return jsonResponse(payload);
+    const single = url.match(/\/matches\/(\d+)(?:\?|$)/);
+    if (single) {
+      const id = Number(single[1]);
+      const match = payload.matches.find(
+        (entry) => typeof entry === "object" && entry != null && "id" in entry && entry.id === id,
+      ) as { id: number } | undefined;
+      if (match) {
+        return jsonResponse({ ...match, minute: 67, injuryTime: null });
+      }
+    }
+    if (url.includes("/competitions/WC")) return jsonResponse({ id: 1, name: "FIFA World Cup" });
+    return jsonResponse({ error: "unexpected url" }, 404);
+  });
+}

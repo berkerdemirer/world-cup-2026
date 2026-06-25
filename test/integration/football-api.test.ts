@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { matches, teams, settings } from "@/db/schema";
 import { syncMatches, maybeSync, apiHealthCheck } from "@/lib/football-api";
-import { resetDb, seedMatch, setSettings, mockFetch, jsonResponse } from "./helpers";
+import { resetDb, seedMatch, setSettings, mockFetch, mockFootballApi, jsonResponse } from "./helpers";
 import { wcMatchesPayload, TEAMS } from "./fixtures/wc-matches";
 
 let unmock: (() => void) | null = null;
@@ -27,11 +27,7 @@ afterEach(() => {
 /** Mock fetch to serve the WC matches payload for the matches endpoint. */
 function mockMatches(payload = wcMatchesPayload()) {
   unmock?.();
-  const m = mockFetch((url) => {
-    if (url.includes("/competitions/WC/matches")) return jsonResponse(payload);
-    if (url.includes("/competitions/WC")) return jsonResponse({ id: 1, name: "FIFA World Cup" });
-    return jsonResponse({ error: "unexpected url" }, 404);
-  });
+  const m = mockFootballApi(payload);
   unmock = m.restore;
   return m;
 }
@@ -154,6 +150,18 @@ test("syncMatches is idempotent — a second run updates in place", async () => 
   assert.equal(first.length, second.length, "no duplicate match rows on re-sync");
 });
 
+test("syncMatches loads minute from the single-match resource when the list omits it", async () => {
+  const m = mockMatches();
+  await syncMatches();
+  assert.equal(
+    m.calls.filter((u) => u.includes("/matches/4")).length,
+    1,
+    "live match without list minute should trigger a detail fetch",
+  );
+  const [live] = await db.select().from(matches).where(eq(matches.id, 4));
+  assert.equal(live.minute, 67);
+});
+
 test("syncMatches requests football-data.org v4.1 for live minute fields", async () => {
   let apiVersion: string | undefined;
   remock((url, init) => {
@@ -161,6 +169,12 @@ test("syncMatches requests football-data.org v4.1 for live minute fields", async
       const headers = new Headers(init?.headers);
       apiVersion = headers.get("X-Api-Version") ?? undefined;
       return jsonResponse(wcMatchesPayload());
+    }
+    const single = url.match(/\/matches\/(\d+)(?:\?|$)/);
+    if (single) {
+      const id = Number(single[1]);
+      const match = wcMatchesPayload().matches.find((x) => x.id === id);
+      if (match) return jsonResponse({ ...match, minute: 67, injuryTime: null });
     }
     return jsonResponse({}, 404);
   });

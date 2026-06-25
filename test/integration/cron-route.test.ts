@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { matches } from "@/db/schema";
 import { GET } from "@/app/api/cron/sync/route";
-import { resetDb, mockFetch, jsonResponse } from "./helpers";
+import { resetDb, mockFetch, mockFootballApi, jsonResponse } from "./helpers";
 import { wcMatchesPayload } from "./fixtures/wc-matches";
 
 const SECRET = "test-cron-secret"; // matches scripts/test-integration.mjs
@@ -17,10 +17,7 @@ before(() => {
 
 beforeEach(async () => {
   await resetDb();
-  const m = mockFetch((url) => {
-    if (url.includes("/competitions/WC/matches")) return jsonResponse(wcMatchesPayload());
-    return jsonResponse({}, 404);
-  });
+  const m = mockFootballApi(wcMatchesPayload());
   unmock = m.restore;
 });
 
