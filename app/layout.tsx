@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   description: "Predict scores and the knockout bracket — compete with colleagues.",
 };
 
+// Every page reads live tournament data or session state. Opt out of static
+// prerender at build time so `pnpm build` / Vercel Preview deploys do not need
+// DATABASE_URL during the build step (only at request time).
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
