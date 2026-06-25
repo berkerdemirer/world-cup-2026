@@ -51,12 +51,20 @@ function SortableHeader({
         title={title}
         onClick={() => onSort(sortKey)}
         className={cn(
-          "inline-flex items-center gap-1 rounded-md outline-none transition hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50",
+          "group inline-flex items-center gap-1 rounded-md outline-none transition hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/50",
           active ? "text-ink" : "text-muted-foreground",
         )}
       >
         <span>{label}</span>
-        <SortIcon className={cn("size-3 shrink-0", active ? "opacity-100" : "opacity-40")} />
+        <SortIcon
+          strokeWidth={2.5}
+          className={cn(
+            "size-3.5 shrink-0 transition-colors",
+            active
+              ? "text-brand"
+              : "text-ink/55 group-hover:text-ink/80",
+          )}
+        />
       </button>
     </th>
   );
@@ -168,21 +176,22 @@ export function LeaderboardTable({
                   title={`${pointValues.goalDiff} pts each`}
                 />
                 <SortableHeader
-                  label="Result"
+                  label="Outcome"
                   sortKey="outcomeCount"
                   activeSortKey={sortKey}
                   direction={sortDirection}
                   onSort={handleSort}
                   className="px-2 py-3 text-center sm:px-3"
-                  title={`${pointValues.outcome} pts each`}
+                  title={`Correct winner or draw picks · ${pointValues.outcome} pts each`}
                 />
                 <SortableHeader
-                  label="Match"
+                  label="Match pts"
                   sortKey="matchPoints"
                   activeSortKey={sortKey}
                   direction={sortDirection}
                   onSort={handleSort}
                   className="px-2 py-3 text-center sm:px-3"
+                  title="Points from score predictions (Exact + +GD + Outcome)"
                 />
                 <SortableHeader
                   label="Bracket"
@@ -272,7 +281,7 @@ export function LeaderboardTable({
                     <td className="px-3 py-3 text-center sm:px-4">
                       <span
                         className={`display text-lg tabular-nums ${r.rank === 1 ? "text-amber-500" : "text-ink"}`}
-                        title={`${r.matchPoints} match + ${r.bracketPoints} bracket`}
+                        title={`${r.matchPoints} match pts + ${r.bracketPoints} bracket pts`}
                       >
                         {r.totalPoints}
                       </span>
@@ -293,9 +302,9 @@ export function LeaderboardTable({
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-        Match pts = Exact ({pointValues.exact}) + +GD ({pointValues.goalDiff}) + Result (
-        {pointValues.outcome}). Total = Match + Bracket. Tap a column header to sort, or tap a
-        player to see their scored picks.
+        Match pts = Exact ({pointValues.exact}) + +GD ({pointValues.goalDiff}) + Outcome (
+        {pointValues.outcome}). Total = Match pts + Bracket pts. Tap a column header to sort, or
+        tap a player to see their scored picks.
       </p>
 
       {selected && (
