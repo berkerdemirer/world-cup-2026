@@ -3,12 +3,13 @@ import assert from "node:assert/strict";
 import {
   getThirdPlaceMatch,
   isValidBracketTree,
+  orderMatchesForBracketDisplay,
   toBracketkitRounds,
 } from "./knockout-bracket-data";
 import type { KnockoutRound } from "@/lib/queries";
 import type { MatchWithTeams } from "@/lib/queries";
 
-function match(id: number): MatchWithTeams {
+function match(id: number, kickoffAt = new Date("2026-07-01T18:00:00Z")): MatchWithTeams {
   return {
     id,
     stage: "LAST_32",
@@ -18,7 +19,7 @@ function match(id: number): MatchWithTeams {
     awayTeamId: null,
     homePlaceholder: null,
     awayPlaceholder: null,
-    kickoffAt: new Date("2026-07-01T18:00:00Z"),
+    kickoffAt,
     status: "SCHEDULED",
     homeScore: null,
     awayScore: null,
@@ -41,6 +42,40 @@ function round(stage: KnockoutRound["stage"], count: number): KnockoutRound {
     matches: Array.from({ length: count }, (_, i) => match(i + 1)),
   };
 }
+
+/** Build 16 R32 fixtures in FIFA kickoff order (M73..M88). */
+function fifaR32Matches(): MatchWithTeams[] {
+  return Array.from({ length: 16 }, (_, i) =>
+    match(73 + i, new Date(`2026-06-28T${String(12 + i).padStart(2, "0")}:00:00Z`)),
+  );
+}
+
+test("orderMatchesForBracketDisplay pairs M74 with M77 for R16 M89", () => {
+  const ordered = orderMatchesForBracketDisplay("LAST_32", fifaR32Matches());
+  // bracketkit feeds adjacent slots into the same R16 tie — M89 is W74 vs W77.
+  assert.deepEqual(ordered.slice(0, 2).map((m) => m.id), [74, 77]);
+  assert.deepEqual(ordered.slice(2, 4).map((m) => m.id), [73, 75]);
+});
+
+test("orderMatchesForBracketDisplay reorders R16 for quarter-final feeders", () => {
+  const r16 = Array.from({ length: 8 }, (_, i) =>
+    match(89 + i, new Date(`2026-07-04T${String(12 + i).padStart(2, "0")}:00:00Z`)),
+  );
+  const ordered = orderMatchesForBracketDisplay("LAST_16", r16);
+  // M97 = W89+W90, M98 = W93+W94, M99 = W91+W92, M100 = W95+W96
+  assert.deepEqual(ordered.map((m) => m.id), [89, 90, 93, 94, 91, 92, 95, 96]);
+});
+
+test("orderMatchesForBracketDisplay leaves other rounds in kickoff order", () => {
+  const qf = [
+    match(97, new Date("2026-07-09T18:00:00Z")),
+    match(98, new Date("2026-07-10T18:00:00Z")),
+    match(99, new Date("2026-07-11T12:00:00Z")),
+    match(100, new Date("2026-07-11T18:00:00Z")),
+  ];
+  const ordered = orderMatchesForBracketDisplay("QUARTER_FINALS", qf);
+  assert.deepEqual(ordered.map((m) => m.id), [97, 98, 99, 100]);
+});
 
 test("toBracketkitRounds maps main stages and skips third place", () => {
   const rounds = toBracketkitRounds([
