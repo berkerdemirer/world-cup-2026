@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { isBracketLocked } from "@/lib/scoring";
+import { isBracketLocked } from "@/lib/bracket-lock";
 
 function subscribeToLock(lockMs: number, onStoreChange: () => void): () => void {
   if (Date.now() >= lockMs) return () => {};
