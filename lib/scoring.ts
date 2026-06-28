@@ -13,7 +13,9 @@ import {
 
 // scoreTier lives in a DB-free module so it can be shared with client code.
 import { scoreTier, type ScoreTier } from "./score-tier";
+import { isBracketLocked } from "./bracket-lock";
 export { scoreTier, type ScoreTier };
+export { isBracketLocked };
 
 export function pointsForTier(tier: ScoreTier, s: Settings): number {
   switch (tier) {
@@ -74,10 +76,6 @@ export function assertMatchOpen(match: Pick<Match, "kickoffAt" | "status">): voi
 }
 
 /** The bracket locks globally at the knockout start time. */
-export function isBracketLocked(lockAt: Date | null): boolean {
-  return !!lockAt && Date.now() >= lockAt.getTime();
-}
-
 export function assertBracketOpen(lockAt: Date | null): void {
   if (isBracketLocked(lockAt)) {
     throw new LockedError("The bracket is locked — the knockout stage has begun.");

@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import { Check, Lock, RotateCcw } from "lucide-react";
 import { submitBracketPicks, resetBracketPicks } from "@/app/actions/predictions";
+import { useBracketLocked } from "@/lib/use-bracket-locked";
 import type { Team, BracketRound } from "@/db/schema";
 
 export interface RoundConfig {
@@ -17,13 +18,16 @@ export function BracketPicker({
   rounds,
   teams,
   initialPicks,
-  locked,
+  lockAt,
+  serverLocked,
 }: {
   rounds: RoundConfig[];
   teams: Team[];
   initialPicks: Record<string, number[]>;
-  locked: boolean;
+  lockAt: string | null;
+  serverLocked: boolean;
 }) {
+  const locked = useBracketLocked(lockAt, serverLocked);
   const [selections, setSelections] = useState<Record<string, number[]>>(() => {
     const init: Record<string, number[]> = {};
     for (const r of rounds) init[r.round] = initialPicks[r.round] ?? [];

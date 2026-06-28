@@ -3,8 +3,8 @@ import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/session";
 import { getAllTeams, getUserBracketPicks } from "@/lib/queries";
 import { getSettings, getBracketLockAt, isBracketLocked } from "@/lib/scoring";
-import { Lock } from "lucide-react";
 import { BracketPicker, type RoundConfig } from "./bracket-picker";
+import { BracketLockBanner } from "./bracket-lock-banner";
 
 export default async function BracketPage() {
   const session = await requireUser();
@@ -31,40 +31,20 @@ export default async function BracketPage() {
         subtitle="Pick which teams reach each round. Later rounds score more per correct team."
       />
 
-      {lockAt && (
-        <div
-          className={`mb-6 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-medium ${
-            locked
-              ? "bg-ink text-white"
-              : "bg-amber-50 text-amber-900 ring-1 ring-amber-200"
-          }`}
-        >
-          <Lock className="size-4 shrink-0" />
-          {locked ? (
-            <span>Bracket locked — the knockout stage has begun.</span>
-          ) : (
-            <span>
-              Picks lock on{" "}
-              <span className="font-bold">
-                {lockAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at{" "}
-                {lockAt.toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                })}
-              </span>{" "}
-              (knockout kickoff). Make your picks before then.
-            </span>
-          )}
-        </div>
-      )}
+      {lockAt && <BracketLockBanner lockAt={lockAt.toISOString()} serverLocked={locked} />}
 
       {teams.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center text-muted-foreground">
           No teams loaded yet. An admin needs to run a data sync first.
         </div>
       ) : (
-        <BracketPicker rounds={rounds} teams={teams} initialPicks={picks} locked={locked} />
+        <BracketPicker
+          rounds={rounds}
+          teams={teams}
+          initialPicks={picks}
+          lockAt={lockAt?.toISOString() ?? null}
+          serverLocked={locked}
+        />
       )}
     </AppShell>
   );

@@ -1,6 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compareMatchesByKickoff, fixtureSectionOf, formatFixtureDate, formatFixtureTime, formatLiveMinute, formatLiveClock } from "./format";
+import { compareMatchesByKickoff, fixtureSectionOf, formatBracketLockDeadline, formatFixtureDate, formatFixtureTime, formatLiveMinute, formatLiveClock } from "./format";
+
+test("formatBracketLockDeadline includes the viewer timezone", () => {
+  const lockAt = new Date("2026-06-28T19:00:00.000Z");
+  const expectedDate = lockAt.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const expectedTime = lockAt.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  });
+
+  assert.equal(formatBracketLockDeadline(lockAt), `${expectedDate} at ${expectedTime}`);
+});
 
 test("formatFixtureTime and formatFixtureDate use runtime locale", () => {
   const kickoff = new Date("2026-06-16T01:00:00.000Z");
