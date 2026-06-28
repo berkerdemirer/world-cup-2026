@@ -85,6 +85,21 @@ export function formatFixtureTime(date: Date): string {
   });
 }
 
+/** Bracket lock deadline in the viewer's local timezone (render only after client mount). */
+export function formatBracketLockDeadline(date: Date): string {
+  const datePart = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const timePart = date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  });
+  return `${datePart} at ${timePart}`;
+}
+
 /** Fixture calendar date in the viewer's local timezone (render only after client mount). */
 export function formatFixtureDate(date: Date, options?: { uppercase?: boolean }): string {
   const label = date.toLocaleDateString("en-US", {
