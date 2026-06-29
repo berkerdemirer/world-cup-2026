@@ -101,15 +101,22 @@ test("getBracketLockAt falls back to the earliest knockout of any stage", async 
   assert.equal(derived.getTime(), firstKnockout.getTime(), "uses the earliest knockout kickoff");
 });
 
-test("getBracketLockAt prefers an explicit setting over the derived time", async () => {
-  const explicit = new Date("2026-06-20T00:00:00Z");
-  await setSettings({ bracketLockAt: explicit });
-  await seedMatch({ id: 502, stage: "LAST_32", status: "SCHEDULED", kickoffAt: new Date("2026-07-02T18:00:00Z") });
+test("getBracketLockAt uses the later of an explicit setting and the derived time", async () => {
+  const earlier = new Date("2026-06-20T00:00:00Z");
+  const derivedKickoff = new Date("2026-07-02T18:00:00Z");
+  await setSettings({ bracketLockAt: earlier });
+  await seedMatch({ id: 502, stage: "LAST_32", status: "SCHEDULED", kickoffAt: derivedKickoff });
 
   const s = await getSettings();
   const lock = await getBracketLockAt(s);
   assert.ok(lock);
-  assert.equal(lock.getTime(), explicit.getTime());
+  assert.equal(lock.getTime(), derivedKickoff.getTime(), "derived knockout start wins when later");
+
+  const extension = new Date("2026-07-05T00:00:00Z");
+  await setSettings({ bracketLockAt: extension });
+  const extended = await getBracketLockAt(await getSettings());
+  assert.ok(extended);
+  assert.equal(extended.getTime(), extension.getTime(), "explicit setting can extend the lock");
 });
 
 test("assertBracketOpen throws once the bracket lock has passed", () => {

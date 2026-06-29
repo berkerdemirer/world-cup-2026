@@ -48,8 +48,8 @@ export function BracketLockBanner({
           Picks lock on{" "}
           <span className="font-bold">
             {isClient ? formatBracketLockDeadline(deadline) : "…"}
-          </span>{" "}
-          (knockout kickoff). Make your picks before then.
+          </span>
+          . Make your picks before then.
         </span>
       )}
     </div>

@@ -13,7 +13,7 @@ import {
 
 // scoreTier lives in a DB-free module so it can be shared with client code.
 import { scoreTier, type ScoreTier } from "./score-tier";
-import { isBracketLocked } from "./bracket-lock";
+import { bracketLockGraceUntil, isBracketLocked, latestBracketLockAt } from "./bracket-lock";
 export { scoreTier, type ScoreTier };
 export { isBracketLocked };
 
@@ -82,15 +82,14 @@ export function assertBracketOpen(lockAt: Date | null): void {
   }
 }
 
-/**
- * Effective bracket lock time: an explicit admin setting wins; otherwise it is
- * the earliest kickoff of any knockout match. Falling back to *all* knockout
- * stages (not just LAST_32) means the lock still fires if the feed labels the
- * first round differently or hasn't scheduled it yet — it can never silently
- * stay open once knockout fixtures exist.
- */
-export async function getBracketLockAt(s: Settings): Promise<Date | null> {
-  if (s.bracketLockAt) return new Date(s.bracketLockAt);
+function bracketLockAtFromEnv(): Date | null {
+  const raw = process.env.BRACKET_LOCK_AT?.trim();
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+async function getDerivedBracketLockAt(): Promise<Date | null> {
   const [first] = await db
     .select({ kickoffAt: matches.kickoffAt })
     .from(matches)
@@ -106,6 +105,25 @@ export async function getBracketLockAt(s: Settings): Promise<Date | null> {
     .orderBy(matches.kickoffAt)
     .limit(1);
   return first ? new Date(first.kickoffAt) : null;
+}
+
+/**
+ * Effective bracket lock time: the latest of the derived knockout start, an
+ * explicit admin setting, BRACKET_LOCK_AT env, and any one-off grace period.
+ * Falling back to *all* knockout stages (not just LAST_32) means the lock still
+ * fires if the feed labels the first round differently or hasn't scheduled it
+ * yet — it can never silently stay open once knockout fixtures exist unless a
+ * later override extends the deadline.
+ */
+export async function getBracketLockAt(s: Settings): Promise<Date | null> {
+  const derived = await getDerivedBracketLockAt();
+  const explicit = s.bracketLockAt ? new Date(s.bracketLockAt) : null;
+  return latestBracketLockAt(
+    derived,
+    explicit,
+    bracketLockAtFromEnv(),
+    bracketLockGraceUntil(),
+  );
 }
 
 export async function getSettings(): Promise<Settings> {

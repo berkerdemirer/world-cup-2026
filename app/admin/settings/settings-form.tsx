@@ -91,7 +91,8 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         </label>
         <p className="mt-1 text-xs text-slate-400">
           When bracket picks stop being editable. Leave empty to derive it automatically from the
-          first knockout kickoff. Times are in your local timezone.
+          first knockout kickoff. If set to a later time, it extends the deadline past kickoff.
+          Times are in your local timezone.
         </p>
       </section>
 
