@@ -1,7 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import type { ScoreTier } from "@/lib/score-tier";
 import type { Team } from "@/db/schema";
 
@@ -18,6 +19,10 @@ export type MatchPredictionRow = {
   awayScore: number;
   tier: ScoreTier;
   points: number;
+  /** Team the user picked to advance to the next bracket round (knockout only). */
+  bracketPickTeamId: number | null;
+  /** Points earned for the bracket pick on this match's outcome. null = not a knockout match. */
+  bracketPoints: number | null;
 };
 
 export type MatchPredictionsData = {
@@ -33,6 +38,8 @@ export type MatchPredictionsData = {
     awayTeam: Team | null;
     homePlaceholder: string | null;
     awayPlaceholder: string | null;
+    advancingTeamId: number | null;
+    nextBracketRound: string | null;
   };
   predictions: MatchPredictionRow[];
 };
@@ -79,6 +86,17 @@ export function MatchPredictionsDialog({
 
   const homeName = data ? teamName(data.match.homeTeam, data.match.homePlaceholder) : "";
   const awayName = data ? teamName(data.match.awayTeam, data.match.awayPlaceholder) : "";
+
+  // Show bracket column only for knockout matches where any prediction has bracket data.
+  const showBracket =
+    data != null &&
+    data.match.advancingTeamId != null &&
+    data.predictions.some((p) => p.bracketPoints !== null);
+
+  // Build a map of teamId → team for crests in the bracket column.
+  const teamById = new Map<number, Team>();
+  if (data?.match.homeTeam) teamById.set(data.match.homeTeam.id, data.match.homeTeam);
+  if (data?.match.awayTeam) teamById.set(data.match.awayTeam.id, data.match.awayTeam);
 
   return (
     <dialog
@@ -147,8 +165,10 @@ export function MatchPredictionsDialog({
                   <tr>
                     <th className="px-4 py-2.5">Player</th>
                     <th className="px-4 py-2.5 text-center">Pick</th>
-                    <th className="px-4 py-2.5 text-right">Result</th>
-                    <th className="px-4 py-2.5 text-right">Pts</th>
+                    <th className="px-4 py-2.5 text-right">Score</th>
+                    {showBracket && (
+                      <th className="px-4 py-2.5 text-right">Bracket</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line bg-card">
@@ -158,12 +178,19 @@ export function MatchPredictionsDialog({
                       <td className="px-4 py-2.5 text-center font-mono text-muted-foreground">
                         {p.homeScore}&ndash;{p.awayScore}
                       </td>
-                      <td className="px-4 py-2.5 text-right text-muted-foreground">
-                        {TIER_LABEL[p.tier]}
+                      <td className="px-4 py-2.5 text-right">
+                        <ScorePill tier={p.tier} points={p.points} />
                       </td>
-                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-ink">
-                        {p.points}
-                      </td>
+                      {showBracket && (
+                        <td className="px-4 py-2.5 text-right">
+                          <BracketCell
+                            bracketPickTeamId={p.bracketPickTeamId}
+                            bracketPoints={p.bracketPoints}
+                            advancingTeamId={data.match.advancingTeamId}
+                            teamById={teamById}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -173,5 +200,63 @@ export function MatchPredictionsDialog({
         </div>
       </div>
     </dialog>
+  );
+}
+
+function ScorePill({ tier, points }: { tier: ScoreTier; points: number }) {
+  const p = {
+    exact: { cls: "bg-brand text-brand-foreground", pts: `+${points}`, label: "Exact" },
+    goal_diff: { cls: "bg-royal text-white", pts: `+${points}`, label: "+GD" },
+    outcome: { cls: "bg-line text-ink", pts: `+${points}`, label: "Result" },
+    none: { cls: "bg-line/70 text-muted-foreground", pts: "0", label: "Miss" },
+  }[tier];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${p.cls}`}
+    >
+      <span className="text-sm font-black normal-case">{p.pts}</span>
+      {p.label}
+    </span>
+  );
+}
+
+function BracketCell({
+  bracketPickTeamId,
+  bracketPoints,
+  advancingTeamId,
+  teamById,
+}: {
+  bracketPickTeamId: number | null;
+  bracketPoints: number | null;
+  advancingTeamId: number | null;
+  teamById: Map<number, Team>;
+}) {
+  if (bracketPoints === null) return <span className="text-muted-foreground">—</span>;
+
+  if (bracketPickTeamId === null) {
+    return <span className="text-xs text-muted-foreground">no pick</span>;
+  }
+
+  const correct = bracketPickTeamId === advancingTeamId;
+  const team = teamById.get(bracketPickTeamId);
+  const name = team?.tla ?? team?.shortName ?? team?.name ?? "?";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-bold ${
+        correct ? "bg-green-600 text-white" : "bg-red-600 text-white"
+      }`}
+    >
+      {team?.crestUrl && (
+        <img src={team.crestUrl} alt="" className="size-4 rounded-full object-cover" />
+      )}
+      {name}
+      {correct ? (
+        <Check className="size-3 stroke-[3]" />
+      ) : (
+        <X className="size-3 stroke-[3]" />
+      )}
+      <span className="font-black">{correct ? `+${bracketPoints}` : "0"}</span>
+    </span>
   );
 }

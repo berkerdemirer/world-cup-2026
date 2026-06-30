@@ -114,19 +114,30 @@ export async function getUserPredictionHistory(
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user) return null;
 
-  const [allMatches, predictions, settings] = await Promise.all([
+  const [allMatches, predictions, settings, bracketRows] = await Promise.all([
     getMatchesWithTeams(),
     getUserScorePredictions(userId),
     getSettings(),
+    db.select({ round: bracketPredictions.round, pickedTeamId: bracketPredictions.pickedTeamId })
+      .from(bracketPredictions)
+      .where(eq(bracketPredictions.userId, userId)),
   ]);
+
+  const bracketPicksByRound = new Map<BracketRound, Set<number>>();
+  for (const row of bracketRows) {
+    let set = bracketPicksByRound.get(row.round);
+    if (!set) { set = new Set(); bracketPicksByRound.set(row.round, set); }
+    set.add(row.pickedTeamId);
+  }
 
   return {
     displayName: user.displayName,
-    history: buildPredictionHistory(allMatches, predictions, settings),
+    history: buildPredictionHistory(allMatches, predictions, settings, bracketPicksByRound),
   };
 }
 
 export interface MatchPredictionRow {
+  userId: string;
   displayName: string;
   homeScore: number;
   awayScore: number;
@@ -136,6 +147,7 @@ export interface MatchPredictionRow {
 export async function getMatchPredictions(matchId: number): Promise<MatchPredictionRow[]> {
   return db
     .select({
+      userId: scorePredictions.userId,
       displayName: users.displayName,
       homeScore: scorePredictions.homeScore,
       awayScore: scorePredictions.awayScore,

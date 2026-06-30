@@ -1,8 +1,13 @@
 import type { MatchWithTeams } from "@/lib/queries";
-import { pointsForTier } from "@/lib/scoring";
+import {
+  pointsForTier,
+  bracketPointsForRound,
+  STAGE_TO_BRACKET_ROUND,
+  NEXT_BRACKET_ROUND,
+} from "@/lib/scoring";
 import { scoreTier, type ScoreTier } from "@/lib/score-tier";
-import { postExtraTimeScore } from "@/lib/match-result";
-import type { Settings } from "@/db/schema";
+import { postExtraTimeScore, advancingTeamFromResult } from "@/lib/match-result";
+import type { Settings, BracketRound } from "@/db/schema";
 
 export type PredPick = { homeScore: number; awayScore: number };
 
@@ -11,12 +16,15 @@ export type HistoryItem = {
   prediction: PredPick;
   tier: ScoreTier;
   points: number;
+  /** Points earned from the bracket pick for the advancing team. null = group stage / not applicable. */
+  bracketPoints: number | null;
 };
 
 export function buildPredictionHistory(
   allMatches: MatchWithTeams[],
   predictions: Map<number, PredPick>,
   settings: Settings,
+  bracketPicksByRound?: Map<BracketRound, Set<number>>,
 ): HistoryItem[] {
   return allMatches
     .filter(
@@ -36,6 +44,26 @@ export function buildPredictionHistory(
         actual.home,
         actual.away,
       );
-      return { match: m, prediction, tier, points: pointsForTier(tier, settings) };
+
+      let bracketPoints: number | null = null;
+      const currentRound = STAGE_TO_BRACKET_ROUND[m.stage];
+      if (currentRound && bracketPicksByRound) {
+        const nextRd = NEXT_BRACKET_ROUND[currentRound];
+        const advancer = advancingTeamFromResult({
+          homeTeamId: m.homeTeamId,
+          awayTeamId: m.awayTeamId,
+          homeScore: m.homeScore,
+          awayScore: m.awayScore,
+          homePens: m.homePens,
+          awayPens: m.awayPens,
+        });
+        if (nextRd && advancer != null) {
+          bracketPoints = bracketPicksByRound.get(nextRd)?.has(advancer)
+            ? bracketPointsForRound(nextRd, settings)
+            : 0;
+        }
+      }
+
+      return { match: m, prediction, tier, points: pointsForTier(tier, settings), bracketPoints };
     });
 }

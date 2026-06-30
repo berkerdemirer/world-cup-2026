@@ -140,6 +140,22 @@ async function allMatches(): Promise<Match[]> {
   return db.select().from(matches);
 }
 
+export const STAGE_TO_BRACKET_ROUND: Partial<Record<string, BracketRound>> = {
+  LAST_32: "LAST_32",
+  LAST_16: "LAST_16",
+  QUARTER_FINALS: "QUARTER_FINALS",
+  SEMI_FINALS: "SEMI_FINALS",
+  FINAL: "FINAL",
+};
+
+export const NEXT_BRACKET_ROUND: Partial<Record<BracketRound, BracketRound>> = {
+  LAST_32: "LAST_16",
+  LAST_16: "QUARTER_FINALS",
+  QUARTER_FINALS: "SEMI_FINALS",
+  SEMI_FINALS: "FINAL",
+  FINAL: "WINNER",
+};
+
 /**
  * For each bracket round, the set of team ids that actually reached it.
  * "Reached round R" = appears as a participant in a stage-R match, or
@@ -158,21 +174,8 @@ export function teamsReachingRounds(all: Match[]): Map<BracketRound, Set<number>
     set.add(teamId);
   };
 
-  const stageToRound: Partial<Record<string, BracketRound>> = {
-    LAST_32: "LAST_32",
-    LAST_16: "LAST_16",
-    QUARTER_FINALS: "QUARTER_FINALS",
-    SEMI_FINALS: "SEMI_FINALS",
-    FINAL: "FINAL",
-  };
-
-  const nextRound: Partial<Record<BracketRound, BracketRound>> = {
-    LAST_32: "LAST_16",
-    LAST_16: "QUARTER_FINALS",
-    QUARTER_FINALS: "SEMI_FINALS",
-    SEMI_FINALS: "FINAL",
-    FINAL: "WINNER",
-  };
+  const stageToRound = STAGE_TO_BRACKET_ROUND;
+  const nextRound = NEXT_BRACKET_ROUND;
 
   for (const m of all) {
     const round = stageToRound[m.stage];

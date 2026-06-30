@@ -3,23 +3,29 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { PageHeader } from "@/components/page-header";
 import { PredictionHistoryList } from "@/components/prediction-history-list";
 import { requireUser } from "@/lib/session";
-import { getLeaderboard, getMatchesWithTeams, getUserScorePredictions } from "@/lib/queries";
+import { getLeaderboard, getMatchesWithTeams, getUserScorePredictions, getUserBracketPicks } from "@/lib/queries";
 import { buildPredictionHistory } from "@/lib/prediction-history";
 import { getSettings } from "@/lib/scoring";
+import type { BracketRound } from "@/db/schema";
 import { Flame } from "lucide-react";
 
 export default async function MyPicksPage() {
   const session = await requireUser();
-  const [allMatches, predictions, leaderboard, settings] = await Promise.all([
+  const [allMatches, predictions, leaderboard, settings, bracketPicksRecord] = await Promise.all([
     getMatchesWithTeams(),
     getUserScorePredictions(session.userId),
     getLeaderboard(),
     getSettings(),
+    getUserBracketPicks(session.userId),
   ]);
 
   const me = leaderboard.find((r) => r.userId === session.userId);
 
-  const history = buildPredictionHistory(allMatches, predictions, settings);
+  const bracketPicksByRound = new Map<BracketRound, Set<number>>(
+    Object.entries(bracketPicksRecord).map(([round, ids]) => [round as BracketRound, new Set(ids)]),
+  );
+
+  const history = buildPredictionHistory(allMatches, predictions, settings, bracketPicksByRound);
 
   const settled = history.length;
   const hits = history.filter((h) => h.tier !== "none").length;

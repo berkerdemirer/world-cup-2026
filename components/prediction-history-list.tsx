@@ -113,7 +113,12 @@ function HistoryRow({ item, onOpen }: { item: HistoryItem; onOpen: () => void })
         {actual.home}&ndash;{actual.away}
       </div>
 
-      <ScorePill tier={tier} points={points} />
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <ScorePill tier={tier} points={points} />
+        {item.bracketPoints !== null && (
+          <BracketBadge points={item.bracketPoints} />
+        )}
+      </div>
     </button>
   );
 }
@@ -133,6 +138,15 @@ function MiniCrest({
       ) : (
         <span className="text-[9px] font-bold text-muted-foreground">{label}</span>
       )}
+    </span>
+  );
+}
+
+function BracketBadge({ points }: { points: number }) {
+  if (points === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white">
+      +{points} bracket
     </span>
   );
 }

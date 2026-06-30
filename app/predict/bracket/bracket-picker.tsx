@@ -238,19 +238,19 @@ function RoundBlock({
           <span className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1">
               <span
-                className="inline-flex size-5 items-center justify-center rounded-full border-2 border-emerald-700 bg-white"
+                className="inline-flex size-5 items-center justify-center rounded-full bg-green-600"
                 aria-hidden
               >
-                <Check className="size-3 stroke-[3] text-emerald-700" />
+                <Check className="size-3 stroke-[3] text-white" />
               </span>
               Qualified
             </span>
             <span className="inline-flex items-center gap-1">
               <span
-                className="inline-flex size-5 items-center justify-center rounded-full border-2 border-red-600 bg-red-50"
+                className="inline-flex size-5 items-center justify-center rounded-full bg-red-600"
                 aria-hidden
               >
-                <X className="size-3 stroke-[3] text-red-700" />
+                <X className="size-3 stroke-[3] text-white" />
               </span>
               Out
             </span>
@@ -285,12 +285,12 @@ function teamChipClass(
 
   if (isSel) {
     if (outcome === "hit") {
-      return `${base} border-emerald-700 bg-white text-emerald-950`;
+      return `${base} border-transparent bg-green-600 text-white`;
     }
     if (outcome === "miss") {
-      return `${base} border-red-600 bg-red-50 text-red-950`;
+      return `${base} border-transparent bg-red-600 text-white`;
     }
-    return `${base} border-transparent bg-brand text-brand-foreground`;
+    return `${base} border-transparent bg-gray-300 text-gray-900`;
   }
 
   if (isQualifier) {
