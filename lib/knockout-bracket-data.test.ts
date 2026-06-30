@@ -57,13 +57,39 @@ test("orderMatchesForBracketDisplay pairs M74 with M77 for R16 M89", () => {
   assert.deepEqual(ordered.slice(2, 4).map((m) => m.id), [73, 75]);
 });
 
-test("orderMatchesForBracketDisplay reorders R16 for quarter-final feeders", () => {
+test("orderMatchesForBracketDisplay keeps R16 in kickoff order for feeder alignment", () => {
   const r16 = Array.from({ length: 8 }, (_, i) =>
     match(89 + i, new Date(`2026-07-04T${String(12 + i).padStart(2, "0")}:00:00Z`)),
   );
   const ordered = orderMatchesForBracketDisplay("LAST_16", r16);
-  // M97 = W89+W90, M98 = W93+W94, M99 = W91+W92, M100 = W95+W96
-  assert.deepEqual(ordered.map((m) => m.id), [89, 90, 93, 94, 91, 92, 95, 96]);
+  assert.deepEqual(ordered.map((m) => m.id), [89, 90, 91, 92, 93, 94, 95, 96]);
+});
+
+test("R32 display order feeds the correct R16 fixture for each bracketkit pair", () => {
+  const orderedR32 = orderMatchesForBracketDisplay("LAST_32", fifaR32Matches());
+  const orderedR16 = orderMatchesForBracketDisplay(
+    "LAST_16",
+    Array.from({ length: 8 }, (_, i) =>
+      match(89 + i, new Date(`2026-07-04T${String(12 + i).padStart(2, "0")}:00:00Z`)),
+    ),
+  );
+
+  const feeders: [r16: number, m1: number, m2: number][] = [
+    [89, 74, 77],
+    [90, 73, 75],
+    [91, 76, 78],
+    [92, 79, 80],
+    [93, 83, 84],
+    [94, 81, 82],
+    [95, 86, 88],
+    [96, 85, 87],
+  ];
+
+  for (let i = 0; i < feeders.length; i++) {
+    const [r16Id, m1, m2] = feeders[i]!;
+    assert.equal(orderedR16[i]?.id, r16Id);
+    assert.deepEqual(orderedR32.slice(i * 2, i * 2 + 2).map((m) => m.id), [m1, m2]);
+  }
 });
 
 test("orderMatchesForBracketDisplay leaves other rounds in kickoff order", () => {
