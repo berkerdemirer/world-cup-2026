@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Lock, RotateCcw } from "lucide-react";
+import { Check, Lock, RotateCcw, X } from "lucide-react";
 import { submitBracketPicks, resetBracketPicks } from "@/app/actions/predictions";
 import { useBracketLocked } from "@/lib/use-bracket-locked";
+import { bracketPickOutcome, type BracketPickOutcome } from "@/lib/bracket-outcomes";
 import type { Team, BracketRound } from "@/db/schema";
 
 export interface RoundConfig {
@@ -14,16 +15,20 @@ export interface RoundConfig {
   points: number;
 }
 
+export type RoundResults = Record<string, { reached: number[]; outOfRound: number[] }>;
+
 export function BracketPicker({
   rounds,
   teams,
   initialPicks,
+  roundResults,
   lockAt,
   serverLocked,
 }: {
   rounds: RoundConfig[];
   teams: Team[];
   initialPicks: Record<string, number[]>;
+  roundResults: RoundResults;
   lockAt: string | null;
   serverLocked: boolean;
 }) {
@@ -74,6 +79,7 @@ export function BracketPicker({
           config={r}
           teams={teams}
           selected={selections[r.round] ?? []}
+          results={roundResults[r.round] ?? { reached: [], outOfRound: [] }}
           onChange={(ids) => setRound(r.round, ids)}
           locked={locked}
         />
@@ -86,12 +92,14 @@ function RoundBlock({
   config,
   teams,
   selected,
+  results,
   onChange,
   locked,
 }: {
   config: RoundConfig;
   teams: Team[];
   selected: number[];
+  results: { reached: number[]; outOfRound: number[] };
   onChange: (ids: number[]) => void;
   locked: boolean;
 }) {
@@ -99,6 +107,14 @@ function RoundBlock({
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const complete = selected.length === config.pick;
+
+  const outcomes = selected.map((id) =>
+    bracketPickOutcome(id, true, results.reached, results.outOfRound),
+  );
+  const hits = outcomes.filter((o) => o === "hit").length;
+  const misses = outcomes.filter((o) => o === "miss").length;
+  const roundFieldFull = results.reached.length >= config.pick;
+  const showResults = selected.length > 0 && (hits > 0 || misses > 0);
 
   const toggle = (id: number) => {
     if (locked) return;
@@ -161,19 +177,27 @@ function RoundBlock({
         {teams.map((t) => {
           const isSel = selected.includes(t.id);
           const blocked = locked || (!isSel && selected.length >= config.pick);
+          const outcome = bracketPickOutcome(
+            t.id,
+            isSel,
+            results.reached,
+            results.outOfRound,
+          );
+          const isQualifier = !isSel && roundFieldFull && results.reached.includes(t.id);
           return (
             <button
               key={t.id}
               type="button"
               onClick={() => toggle(t.id)}
               disabled={blocked && !isSel}
-              className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-semibold outline-none transition focus-visible:ring-3 focus-visible:ring-ring/70 ${
-                isSel
-                  ? "border-transparent bg-brand text-brand-foreground"
-                  : blocked
-                    ? "cursor-not-allowed border-line text-muted-foreground/40"
-                    : "border-line text-ink hover:border-ink"
-              }`}
+              className={teamChipClass(isSel, blocked, outcome, isQualifier)}
+              title={
+                outcome
+                  ? OUTCOME_LABEL[outcome]
+                  : isQualifier
+                    ? "Reached this round"
+                    : undefined
+              }
             >
               <span
                 className={`grid size-6 shrink-0 place-items-center overflow-hidden rounded-full bg-white ${
@@ -189,10 +213,50 @@ function RoundBlock({
                 )}
               </span>
               {t.tla || t.shortName || t.name}
+              {outcome === "hit" && (
+                <Check className="size-3.5 shrink-0 stroke-[3]" aria-hidden />
+              )}
+              {outcome === "miss" && (
+                <X className="size-3.5 shrink-0 stroke-[3]" aria-hidden />
+              )}
             </button>
           );
         })}
       </div>
+
+      {showResults && (
+        <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs font-medium text-muted-foreground">
+          <span>
+            <span className="font-bold text-green-700">{hits}</span> reached this round
+            {misses > 0 && (
+              <>
+                {" "}
+                · <span className="font-bold text-red-600">{misses}</span> missed
+              </>
+            )}
+          </span>
+          <span className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="inline-flex size-5 items-center justify-center rounded-full border-2 border-emerald-700 bg-white"
+                aria-hidden
+              >
+                <Check className="size-3 stroke-[3] text-emerald-700" />
+              </span>
+              Qualified
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="inline-flex size-5 items-center justify-center rounded-full border-2 border-red-600 bg-red-50"
+                aria-hidden
+              >
+                <X className="size-3 stroke-[3] text-red-700" />
+              </span>
+              Out
+            </span>
+          </span>
+        </p>
+      )}
 
       {locked && (
         <p className="mt-4 flex items-center gap-1.5 border-t border-line pt-3 text-xs font-medium text-muted-foreground">
@@ -202,4 +266,40 @@ function RoundBlock({
       )}
     </section>
   );
+}
+
+const OUTCOME_LABEL: Record<BracketPickOutcome, string> = {
+  hit: "Reached this round",
+  miss: "Did not reach this round",
+  pending: "Still possible",
+};
+
+function teamChipClass(
+  isSel: boolean,
+  blocked: boolean,
+  outcome: BracketPickOutcome | null,
+  isQualifier: boolean,
+): string {
+  const base =
+    "flex items-center gap-2 rounded-full border-2 py-1 pl-1 pr-3 text-sm font-semibold outline-none transition focus-visible:ring-3 focus-visible:ring-ring/70";
+
+  if (isSel) {
+    if (outcome === "hit") {
+      return `${base} border-emerald-700 bg-white text-emerald-950`;
+    }
+    if (outcome === "miss") {
+      return `${base} border-red-600 bg-red-50 text-red-950`;
+    }
+    return `${base} border-transparent bg-brand text-brand-foreground`;
+  }
+
+  if (isQualifier) {
+    return `${base} border-emerald-600/40 bg-emerald-50/80 text-ink`;
+  }
+
+  if (blocked) {
+    return `${base} cursor-not-allowed border-line text-muted-foreground/40`;
+  }
+
+  return `${base} border-line text-ink hover:border-ink`;
 }

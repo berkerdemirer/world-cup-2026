@@ -5,6 +5,8 @@ import {
   pointsForTier,
   bracketPointsForRound,
   teamsReachingRounds,
+  teamsEliminatedFromKnockout,
+  teamsOutOfBracketRound,
 } from "./scoring";
 import type { Settings, Match } from "@/db/schema";
 
@@ -129,4 +131,53 @@ test("teamsReachingRounds credits pen winners for the next round before fixtures
   const reached = teamsReachingRounds(matches);
   assert.deepEqual([...reached.get("LAST_32")!].sort((a, b) => a - b), [100, 200]);
   assert.deepEqual([...reached.get("LAST_16")!], [200]);
+});
+
+test("teamsEliminatedFromKnockout collects knockout losers", () => {
+  const matches: Match[] = [
+    m({
+      id: 1,
+      stage: "LAST_32",
+      status: "FINISHED",
+      homeTeamId: 100,
+      awayTeamId: 200,
+      homeScore: 1,
+      awayScore: 1,
+      homePens: 4,
+      awayPens: 5,
+    }),
+  ];
+  assert.deepEqual([...teamsEliminatedFromKnockout(matches)], [100]);
+});
+
+test("teamsOutOfBracketRound marks teams missing from a full previous round", () => {
+  const reached = teamsReachingRounds([
+    m({
+      id: 1,
+      stage: "LAST_32",
+      status: "FINISHED",
+      homeTeamId: 1,
+      awayTeamId: 2,
+      homeScore: 2,
+      awayScore: 0,
+    }),
+  ]);
+  // Only one R32 tie seeded — not a full field; group outsiders stay pending.
+  const out = teamsOutOfBracketRound("LAST_16", [1, 2, 99], reached, new Set());
+  assert.equal(out.has(99), false);
+
+  // Once all 32 R32 slots are populated, outsiders cannot reach R16.
+  const fullR32 = Array.from({ length: 16 }, (_, i) =>
+    m({
+      id: i + 1,
+      stage: "LAST_32",
+      homeTeamId: i * 2 + 1,
+      awayTeamId: i * 2 + 2,
+    }),
+  );
+  const fullReached = teamsReachingRounds(fullR32);
+  assert.equal(fullReached.get("LAST_32")!.size, 32);
+  const outFull = teamsOutOfBracketRound("LAST_16", [1, 2, 99], fullReached, new Set());
+  assert.equal(outFull.has(99), true);
+  assert.equal(outFull.has(1), false);
 });

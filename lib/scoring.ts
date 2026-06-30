@@ -196,6 +196,78 @@ export function teamsReachingRounds(all: Match[]): Map<BracketRound, Set<number>
   return result;
 }
 
+/** How many teams participate in each knockout bracket round. */
+export const BRACKET_ROUND_CAPACITY: Partial<Record<BracketRound, number>> = {
+  LAST_32: 32,
+  LAST_16: 16,
+  QUARTER_FINALS: 8,
+  SEMI_FINALS: 4,
+  FINAL: 2,
+  WINNER: 1,
+};
+
+const PREV_BRACKET_ROUND: Partial<Record<BracketRound, BracketRound>> = {
+  LAST_16: "LAST_32",
+  QUARTER_FINALS: "LAST_16",
+  SEMI_FINALS: "QUARTER_FINALS",
+  FINAL: "SEMI_FINALS",
+  WINNER: "FINAL",
+};
+
+/** Losers of finished knockout ties — they cannot reach any later round. */
+export function teamsEliminatedFromKnockout(all: Match[]): Set<number> {
+  const eliminated = new Set<number>();
+  for (const m of all) {
+    if (m.stage === "GROUP_STAGE" || m.status !== "FINISHED") continue;
+    if (m.homeTeamId == null || m.awayTeamId == null) continue;
+    const adv = advancingTeamFromResult({
+      homeTeamId: m.homeTeamId,
+      awayTeamId: m.awayTeamId,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      homePens: m.homePens,
+      awayPens: m.awayPens,
+    });
+    if (adv == null) continue;
+    eliminated.add(adv === m.homeTeamId ? m.awayTeamId : m.homeTeamId);
+  }
+  return eliminated;
+}
+
+/**
+ * Teams that can no longer reach `round` — knockout losers plus anyone
+ * missing from a previous round once that round's field is full.
+ */
+export function teamsOutOfBracketRound(
+  round: BracketRound,
+  allTeamIds: readonly number[],
+  reached: Map<BracketRound, Set<number>>,
+  knockoutEliminated: Set<number>,
+): Set<number> {
+  const out = new Set(knockoutEliminated);
+
+  const cap = BRACKET_ROUND_CAPACITY[round];
+  const roundReached = reached.get(round);
+  if (cap != null && roundReached != null && roundReached.size >= cap) {
+    for (const id of allTeamIds) {
+      if (!roundReached.has(id)) out.add(id);
+    }
+  }
+
+  const prev = PREV_BRACKET_ROUND[round];
+  if (prev != null) {
+    const prevCap = BRACKET_ROUND_CAPACITY[prev];
+    const prevReached = reached.get(prev);
+    if (prevCap != null && prevReached != null && prevReached.size >= prevCap) {
+      for (const id of allTeamIds) {
+        if (!prevReached.has(id)) out.add(id);
+      }
+    }
+  }
+
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Full leaderboard recompute (cheap at colleague scale; avoids incremental bugs)
 // ---------------------------------------------------------------------------

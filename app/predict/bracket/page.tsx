@@ -1,20 +1,50 @@
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/session";
-import { getAllTeams, getUserBracketPicks } from "@/lib/queries";
-import { getSettings, getBracketLockAt, isBracketLocked } from "@/lib/scoring";
+import { getAllTeams, getUserBracketPicks, getMatchesWithTeams } from "@/lib/queries";
+import {
+  getSettings,
+  getBracketLockAt,
+  isBracketLocked,
+  teamsReachingRounds,
+  teamsEliminatedFromKnockout,
+  teamsOutOfBracketRound,
+} from "@/lib/scoring";
+import type { BracketRound } from "@/db/schema";
 import { BracketPicker, type RoundConfig } from "./bracket-picker";
 import { BracketLockBanner } from "./bracket-lock-banner";
 
 export default async function BracketPage() {
   const session = await requireUser();
-  const [teams, picks, settings] = await Promise.all([
+  const [teams, picks, settings, matches] = await Promise.all([
     getAllTeams(),
     getUserBracketPicks(session.userId),
     getSettings(),
+    getMatchesWithTeams(),
   ]);
   const lockAt = await getBracketLockAt(settings);
   const locked = isBracketLocked(lockAt);
+
+  const reachedMap = teamsReachingRounds(matches);
+  const knockoutEliminated = teamsEliminatedFromKnockout(matches);
+  const allTeamIds = teams.map((t) => t.id);
+
+  const roundResults: Record<
+    string,
+    { reached: number[]; outOfRound: number[] }
+  > = {};
+  for (const round of [
+    "LAST_16",
+    "QUARTER_FINALS",
+    "SEMI_FINALS",
+    "FINAL",
+    "WINNER",
+  ] as BracketRound[]) {
+    roundResults[round] = {
+      reached: [...(reachedMap.get(round) ?? [])],
+      outOfRound: [...teamsOutOfBracketRound(round, allTeamIds, reachedMap, knockoutEliminated)],
+    };
+  }
 
   const rounds: RoundConfig[] = [
     { round: "LAST_16", label: "Round of 16", pick: 16, points: settings.ptsBracketR16 },
@@ -42,6 +72,7 @@ export default async function BracketPage() {
           rounds={rounds}
           teams={teams}
           initialPicks={picks}
+          roundResults={roundResults}
           lockAt={lockAt?.toISOString() ?? null}
           serverLocked={locked}
         />
