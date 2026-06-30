@@ -37,6 +37,8 @@ interface ApiMatch {
     duration?: string;
     fullTime: ApiScoreHalf;
     halfTime?: ApiScoreHalf;
+    regularTime?: ApiScoreHalf;
+    extraTime?: ApiScoreHalf;
     penalties?: ApiScoreHalf;
   };
 }
@@ -99,6 +101,38 @@ async function enrichLiveMatchClock(m: ApiMatch): Promise<ApiMatch> {
     minute: detail.minute ?? null,
     injuryTime: detail.injuryTime ?? null,
   };
+}
+
+/**
+ * Post-extra-time score for storage and prediction grading. Prefer
+ * regularTime + extraTime; fall back to fullTime minus penalties when the API
+ * folded shoot-out goals into fullTime.
+ */
+function apiPostExtraTimeScore(m: ApiMatch): { home: number | null; away: number | null } {
+  const rt = m.score.regularTime;
+  const et = m.score.extraTime;
+  if (rt?.home != null && rt?.away != null) {
+    return {
+      home: rt.home + (et?.home ?? 0),
+      away: rt.away + (et?.away ?? 0),
+    };
+  }
+
+  const h = m.score.fullTime.home;
+  const a = m.score.fullTime.away;
+  if (h == null || a == null) return { home: null, away: null };
+
+  const ph = m.score.penalties?.home;
+  const pa = m.score.penalties?.away;
+  if (ph != null && pa != null) {
+    const afterEtHome = h - ph;
+    const afterEtAway = a - pa;
+    if (afterEtHome === afterEtAway && afterEtHome >= 0) {
+      return { home: afterEtHome, away: afterEtAway };
+    }
+  }
+
+  return { home: h, away: a };
 }
 
 /** Resolve which team advanced from a knockout match, including penalties. */
@@ -180,6 +214,8 @@ export async function syncMatches(): Promise<SyncResult> {
     const stage = normalizeStage(m.stage);
     const live = isApiMatchLive(m);
 
+    const postEt = apiPostExtraTimeScore(m);
+
     const values = {
       id: m.id,
       stage,
@@ -193,8 +229,9 @@ export async function syncMatches(): Promise<SyncResult> {
       status: m.status as MatchStatus,
       // Store the latest score even while IN_PLAY so the dashboard shows live
       // scores. Points are only awarded for FINISHED matches (see recomputeScores).
-      homeScore: m.score.fullTime.home ?? null,
-      awayScore: m.score.fullTime.away ?? null,
+      // Knockout pens are stored separately; homeScore/awayScore are post-ET only.
+      homeScore: postEt.home ?? m.score.fullTime.home ?? null,
+      awayScore: postEt.away ?? m.score.fullTime.away ?? null,
       homePens: m.score.penalties?.home ?? null,
       awayPens: m.score.penalties?.away ?? null,
       minute: live ? (m.minute ?? null) : null,

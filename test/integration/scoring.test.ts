@@ -147,6 +147,34 @@ test("recomputeScores writes a zero row for users with no correct predictions", 
   assert.equal(sl.totalPoints, 0);
 });
 
+test("recomputeScores grades knockouts on post-extra-time score, not pens", async () => {
+  await seedTeam(1, "Germany");
+  await seedTeam(2, "Paraguay");
+  // football-data.org stored fullTime with pens baked in (5-6); actual post-ET was 1-1.
+  await seedMatch({
+    id: 50,
+    stage: "LAST_32",
+    status: "FINISHED",
+    homeTeamId: 1,
+    awayTeamId: 2,
+    homeScore: 5,
+    awayScore: 6,
+    homePens: 4,
+    awayPens: 5,
+    advancingTeamId: 2,
+  });
+
+  const andrei = await seedUser("Andrei");
+  const cardo = await seedUser("Cardo");
+  await seedScorePrediction(andrei.id, 50, 2, 3); // would match GD -1 on 5-6, not on 1-1
+  await seedScorePrediction(cardo.id, 50, 2, 2); // correct draw outcome after ET
+
+  await recomputeScores();
+
+  assert.equal((await scoreFor(andrei.id)).totalPoints, 0);
+  assert.equal((await scoreFor(cardo.id)).totalPoints, 2, "2-2 vs 1-1 is a correct draw outcome");
+});
+
 test("getLeaderboard ranks by total, then exact count, then join time", async () => {
   await seedTeam(764, "Brazil");
   await seedTeam(762, "Serbia");

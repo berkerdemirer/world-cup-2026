@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import type { HistoryItem } from "@/lib/prediction-history";
 import type { ScoreTier } from "@/lib/score-tier";
+import { postExtraTimeScore } from "@/lib/match-result";
 import type { Team } from "@/db/schema";
 import {
   MatchPredictionsDialog,
@@ -81,6 +82,7 @@ function teamName(team: Team | null | undefined, placeholder?: string | null): s
 
 function HistoryRow({ item, onOpen }: { item: HistoryItem; onOpen: () => void }) {
   const { match, prediction, tier, points } = item;
+  const actual = postExtraTimeScore(match)!;
   const homeName = teamName(match.homeTeam, match.homePlaceholder);
   const awayName = teamName(match.awayTeam, match.awayPlaceholder);
 
@@ -108,7 +110,7 @@ function HistoryRow({ item, onOpen }: { item: HistoryItem; onOpen: () => void })
       </div>
 
       <div className="display shrink-0 text-2xl text-ink">
-        {match.homeScore}&ndash;{match.awayScore}
+        {actual.home}&ndash;{actual.away}
       </div>
 
       <ScorePill tier={tier} points={points} />

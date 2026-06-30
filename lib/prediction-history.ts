@@ -1,6 +1,7 @@
 import type { MatchWithTeams } from "@/lib/queries";
 import { pointsForTier } from "@/lib/scoring";
 import { scoreTier, type ScoreTier } from "@/lib/score-tier";
+import { postExtraTimeScore } from "@/lib/match-result";
 import type { Settings } from "@/db/schema";
 
 export type PredPick = { homeScore: number; awayScore: number };
@@ -28,11 +29,12 @@ export function buildPredictionHistory(
     .sort((a, b) => new Date(b.kickoffAt).getTime() - new Date(a.kickoffAt).getTime())
     .map((m) => {
       const prediction = predictions.get(m.id)!;
+      const actual = postExtraTimeScore(m)!;
       const tier = scoreTier(
         prediction.homeScore,
         prediction.awayScore,
-        m.homeScore!,
-        m.awayScore!,
+        actual.home,
+        actual.away,
       );
       return { match: m, prediction, tier, points: pointsForTier(tier, settings) };
     });

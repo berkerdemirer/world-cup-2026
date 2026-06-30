@@ -95,7 +95,9 @@ test("syncMatches resolves the advancing team in regulation knockouts", async ()
 test("syncMatches resolves the advancing team via penalties on a draw", async () => {
   await syncMatches();
   const [m101] = await db.select().from(matches).where(eq(matches.id, 101));
-  // 1-1, penalties 4-2 to Portugal.
+  // 1-1 after extra time, penalties 4-2 to Portugal.
+  assert.equal(m101.homeScore, 1);
+  assert.equal(m101.awayScore, 1);
   assert.equal(m101.homePens, 4);
   assert.equal(m101.awayPens, 2);
   assert.equal(m101.advancingTeamId, TEAMS.portugal.id);

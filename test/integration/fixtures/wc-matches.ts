@@ -117,10 +117,13 @@ export function wcMatchesPayload(now = new Date("2026-06-15T00:00:00Z")) {
         homeTeam: TEAMS.portugal,
         awayTeam: TEAMS.argentina,
         score: {
-          winner: "DRAW",
+          winner: "HOME_TEAM",
           duration: "PENALTY_SHOOTOUT",
-          fullTime: { home: 1, away: 1 },
+          // football-data.org fullTime includes shoot-out goals; we store post-ET only.
+          fullTime: { home: 5, away: 3 },
           halfTime: { home: 0, away: 1 },
+          regularTime: { home: 1, away: 1 },
+          extraTime: { home: 0, away: 0 },
           penalties: { home: 4, away: 2 },
         },
       },

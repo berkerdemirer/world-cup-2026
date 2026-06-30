@@ -8,6 +8,7 @@ import { TeamBadge } from "@/components/team-badge";
 import { STAGE_LABELS } from "@/lib/format";
 import { isMatchLive } from "@/lib/match-status";
 import { scoreTier, pointsForTier, getSettings, type ScoreTier } from "@/lib/scoring";
+import { postExtraTimeScore } from "@/lib/match-result";
 
 const TIER_LABEL: Record<ScoreTier, string> = {
   exact: "Exact",
@@ -32,6 +33,7 @@ export default async function MatchDetailPage({
   const locked = isMatchLocked(match);
   const live = isMatchLive(match);
   const finished = match.status === "FINISHED";
+  const result = finished ? postExtraTimeScore(match) : null;
   const settings = await getSettings();
   const predictions = locked ? await getMatchPredictions(matchId) : [];
 
@@ -53,9 +55,11 @@ export default async function MatchDetailPage({
             <LiveBadge className="mb-2 justify-center" status={match.status} minute={match.minute} injuryTime={match.injuryTime} />
           )}
           <div className="font-mono text-2xl font-bold text-slate-900">
-            {finished || live
-              ? `${match.homeScore ?? 0} : ${match.awayScore ?? 0}`
-              : "vs"}
+            {finished && result
+              ? `${result.home} : ${result.away}`
+              : live
+                ? `${match.homeScore ?? 0} : ${match.awayScore ?? 0}`
+                : "vs"}
           </div>
           {finished && match.homePens != null && match.awayPens != null && (
             <div className="text-xs text-slate-500">
@@ -97,8 +101,8 @@ export default async function MatchDetailPage({
             <tbody className="divide-y divide-slate-100">
               {predictions.map((p) => {
                 const tier =
-                  finished && match.homeScore != null && match.awayScore != null
-                    ? scoreTier(p.homeScore, p.awayScore, match.homeScore, match.awayScore)
+                  finished && result
+                    ? scoreTier(p.homeScore, p.awayScore, result.home, result.away)
                     : null;
                 return (
                   <tr key={p.displayName}>

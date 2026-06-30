@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { LiveBadge } from "@/components/live-badge";
 import { isMatchLive } from "@/lib/match-status";
+import { postExtraTimeScore } from "@/lib/match-result";
 import { formatLiveClock } from "@/lib/format";
 import type { MatchWithTeams } from "@/lib/queries";
 
@@ -65,6 +66,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
   const liveClock = live ? formatLiveClock(match) : null;
   const hasScore = match.homeScore != null && match.awayScore != null;
   const finished = match.status === "FINISHED" && hasScore;
+  const result = finished ? postExtraTimeScore(match) : null;
   const homeWinner =
     finished &&
     (match.advancingTeamId === match.homeTeamId ||
@@ -98,7 +100,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
       <TeamSide
         team={match.homeTeam}
         placeholder={match.homePlaceholder}
-        score={hasScore ? match.homeScore : null}
+        score={hasScore ? (finished ? result!.home : match.homeScore) : null}
         pens={finished && match.homePens != null ? match.homePens : null}
         isWinner={!!homeWinner}
         align="right"
@@ -109,7 +111,7 @@ export function KnockoutMatchRow({ match }: { match: MatchWithTeams }) {
       <TeamSide
         team={match.awayTeam}
         placeholder={match.awayPlaceholder}
-        score={hasScore ? match.awayScore : null}
+        score={hasScore ? (finished ? result!.away : match.awayScore) : null}
         pens={finished && match.awayPens != null ? match.awayPens : null}
         isWinner={!!awayWinner}
         align="left"

@@ -14,6 +14,7 @@ import {
 // scoreTier lives in a DB-free module so it can be shared with client code.
 import { scoreTier, type ScoreTier } from "./score-tier";
 import { bracketLockGraceUntil, isBracketLocked, latestBracketLockAt } from "./bracket-lock";
+import { postExtraTimeScore } from "./match-result";
 export { scoreTier, type ScoreTier };
 export { isBracketLocked };
 
@@ -207,8 +208,10 @@ export async function recomputeScores(): Promise<void> {
 
   for (const p of allScorePreds) {
     const m = finishedById.get(p.matchId);
-    if (!m || m.homeScore == null || m.awayScore == null) continue;
-    const tier = scoreTier(p.homeScore, p.awayScore, m.homeScore, m.awayScore);
+    if (!m) continue;
+    const actual = postExtraTimeScore(m);
+    if (!actual) continue;
+    const tier = scoreTier(p.homeScore, p.awayScore, actual.home, actual.away);
     const agg = ensure(p.userId);
     agg.match += pointsForTier(tier, s);
     switch (tier) {

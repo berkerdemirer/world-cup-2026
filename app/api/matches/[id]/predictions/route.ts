@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getMatchPredictions, getMatchWithTeams } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 import { scoreTier, pointsForTier, getSettings } from "@/lib/scoring";
+import { postExtraTimeScore } from "@/lib/match-result";
 import { STAGE_LABELS } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -30,13 +31,15 @@ export async function GET(
     return NextResponse.json({ error: "Match is not finished" }, { status: 400 });
   }
 
+  const actual = postExtraTimeScore(match)!;
+
   const [rawPredictions, settings] = await Promise.all([
     getMatchPredictions(matchId),
     getSettings(),
   ]);
 
   const predictions = rawPredictions.map((p) => {
-    const tier = scoreTier(p.homeScore, p.awayScore, match.homeScore!, match.awayScore!);
+    const tier = scoreTier(p.homeScore, p.awayScore, actual.home, actual.away);
     return {
       displayName: p.displayName,
       homeScore: p.homeScore,
@@ -52,8 +55,8 @@ export async function GET(
       stage: match.stage,
       stageLabel: STAGE_LABELS[match.stage],
       kickoffAt: match.kickoffAt,
-      homeScore: match.homeScore,
-      awayScore: match.awayScore,
+      homeScore: actual.home,
+      awayScore: actual.away,
       homePens: match.homePens,
       awayPens: match.awayPens,
       homeTeam: match.homeTeam,

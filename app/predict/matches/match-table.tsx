@@ -6,6 +6,7 @@ import { Check, Loader2, Sparkles } from "lucide-react";
 import { submitScorePrediction } from "@/app/actions/predictions";
 import { LiveBadge } from "@/components/live-badge";
 import { scoreTier } from "@/lib/score-tier";
+import { postExtraTimeScore } from "@/lib/match-result";
 import {
   compareMatchesByKickoff,
   fixtureSectionOf,
@@ -420,7 +421,10 @@ function Row({
           </div>
         ) : hasScore ? (
           <div className="display text-center text-xl text-ink">
-            {match.homeScore}&ndash;{match.awayScore}
+            {(() => {
+              const actual = postExtraTimeScore(match)!;
+              return `${actual.home}\u2013${actual.away}`;
+            })()}
           </div>
         ) : (
           <div className="text-center text-xs font-semibold text-muted-foreground">Locked</div>
@@ -443,11 +447,12 @@ function TierBadge({
   prediction: { homeScore: number; awayScore: number };
   points: MatchPoints;
 }) {
+  const actual = postExtraTimeScore(match)!;
   const tier = scoreTier(
     prediction.homeScore,
     prediction.awayScore,
-    match.homeScore!,
-    match.awayScore!,
+    actual.home,
+    actual.away,
   );
   const p = {
     exact: { cls: "bg-brand text-brand-foreground", pts: `+${points.exact}`, label: "Exact" },
