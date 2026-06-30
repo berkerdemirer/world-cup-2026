@@ -8,19 +8,22 @@ const MAIN_BRACKET_STAGES: Stage[] = KNOCKOUT_STAGES.filter((s) => s !== "THIRD_
 
 /**
  * bracketkit pairs adjacent matches (2i, 2i+1) into the next round. FIFA's 2026
- * bracket crosses paths instead — e.g. R16 M89 is W74 vs W77, not W74 vs W75.
- * Indices refer to kickoff order within the round (M73..M88).
+ * bracket crosses paths — both R32 and R16 are reordered so that:
+ *   - Each R32 pair is vertically aligned with the R16 match they feed.
+ *   - R16 pairs are grouped so QF 9/7 + QF 10/7 share one SF, and
+ *     QF 12/7(×2) share the other (matching the official bracket halves).
  *
- * Only R32 is reordered: later rounds must stay in kickoff order so each match
- * stays vertically aligned with its two feeders from the previous column.
- * (Reordering R16 for QF crossover paths would shift fixtures away from their
- * R32 winners — e.g. M91 would no longer sit between the M76/M78 feeders.)
+ * R16 display order: Canada/Morocco, Paraguay, Spain/Portugal, Belgium/USA,
+ *                    Brazil, Mexico/England, Australia/Argentina, Switzerland/Colombia
+ * R32 feeders: 89←73+76, 90←75+78, 93←83+84, 94←81+82,
+ *              91←74+77, 92←79+80, 95←86+87, 96←85+88
  *
  * @see https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/knockout-stage-match-schedule-bracket
  */
 const BRACKET_DISPLAY_ORDER: Partial<Record<Stage, readonly number[]>> = {
-  // R16 feeders (R16 in kickoff order): 89←73+76, 90←75+78, 91←74+77, 92←79+80, 93←83+84, 94←81+82, 95←86+87, 96←85+88
-  LAST_32: [0, 3, 2, 5, 1, 4, 6, 7, 10, 11, 8, 9, 13, 14, 12, 15],
+  LAST_32: [0, 3, 2, 5, 10, 11, 8, 9, 1, 4, 6, 7, 13, 14, 12, 15],
+  // Swap middle pairs so Spain/Belgium section feeds QF 10/7 before Brazil/Mexico section feeds QF 12/7
+  LAST_16: [0, 1, 4, 5, 2, 3, 6, 7],
 };
 
 /** Reorder a round's matches so bracketkit connectors match FIFA's knockout tree. */

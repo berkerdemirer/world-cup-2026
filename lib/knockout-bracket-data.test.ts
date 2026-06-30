@@ -57,12 +57,15 @@ test("orderMatchesForBracketDisplay pairs M73 with M76 for R16 M89", () => {
   assert.deepEqual(ordered.slice(2, 4).map((m) => m.id), [75, 78]);
 });
 
-test("orderMatchesForBracketDisplay keeps R16 in kickoff order for feeder alignment", () => {
+test("orderMatchesForBracketDisplay reorders R16 for correct SF bracket halves", () => {
+  // R16 kickoff order: M89(4/7), M90(5/7 00:00), M91(5/7 23:00=Brazil), M92(6/7 03:00=Mexico/England),
+  //                   M93(6/7 22:00=Spain/Portugal), M94(7/7 03:00=Belgium/USA), M95(7/7 19:00), M96(7/7 23:00)
+  // Display order swaps middle pairs so QF 9/7+10/7 share SF1, QF 12/7+12/7 share SF2.
   const r16 = Array.from({ length: 8 }, (_, i) =>
     match(89 + i, new Date(`2026-07-04T${String(12 + i).padStart(2, "0")}:00:00Z`)),
   );
   const ordered = orderMatchesForBracketDisplay("LAST_16", r16);
-  assert.deepEqual(ordered.map((m) => m.id), [89, 90, 91, 92, 93, 94, 95, 96]);
+  assert.deepEqual(ordered.map((m) => m.id), [89, 90, 93, 94, 91, 92, 95, 96]);
 });
 
 test("R32 display order feeds the correct R16 fixture for each bracketkit pair", () => {
@@ -75,14 +78,14 @@ test("R32 display order feeds the correct R16 fixture for each bracketkit pair",
   );
 
   const feeders: [r16: number, m1: number, m2: number][] = [
-    [89, 73, 76], // South Africa/Canada + Netherlands/Morocco
-    [90, 75, 78], // Germany/Paraguay + France/Sweden
-    [91, 74, 77], // Brazil/Japan + Ivory Coast/Norway
-    [92, 79, 80], // Mexico/Ecuador + England/Congo DR
-    [93, 83, 84], // Spain/Austria + Portugal/Croatia
-    [94, 81, 82], // Belgium/Senegal + USA/Bosnia
-    [95, 86, 87], // Australia/Egypt + Argentina/Cape Verde
-    [96, 85, 88], // Switzerland/Algeria + Colombia/Ghana
+    [89, 73, 76], // South Africa/Canada + Netherlands/Morocco → Canada/Morocco R16
+    [90, 75, 78], // Germany/Paraguay + France/Sweden → Paraguay R16
+    [93, 83, 84], // Spain/Austria + Portugal/Croatia → Spain/Portugal R16
+    [94, 81, 82], // Belgium/Senegal + USA/Bosnia → Belgium/USA R16
+    [91, 74, 77], // Brazil/Japan + Ivory Coast/Norway → Brazil R16
+    [92, 79, 80], // Mexico/Ecuador + England/Congo DR → Mexico/England R16
+    [95, 86, 87], // Australia/Egypt + Argentina/Cape Verde → Australia/Argentina R16
+    [96, 85, 88], // Switzerland/Algeria + Colombia/Ghana → Switzerland/Colombia R16
   ];
 
   for (let i = 0; i < feeders.length; i++) {
