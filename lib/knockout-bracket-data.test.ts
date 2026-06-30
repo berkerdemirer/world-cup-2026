@@ -50,11 +50,11 @@ function fifaR32Matches(): MatchWithTeams[] {
   );
 }
 
-test("orderMatchesForBracketDisplay pairs M74 with M77 for R16 M89", () => {
+test("orderMatchesForBracketDisplay pairs M73 with M76 for R16 M89", () => {
   const ordered = orderMatchesForBracketDisplay("LAST_32", fifaR32Matches());
-  // bracketkit feeds adjacent slots into the same R16 tie — M89 is W74 vs W77.
-  assert.deepEqual(ordered.slice(0, 2).map((m) => m.id), [74, 77]);
-  assert.deepEqual(ordered.slice(2, 4).map((m) => m.id), [73, 75]);
+  // bracketkit feeds adjacent slots into the same R16 tie — M89 is W73 vs W76.
+  assert.deepEqual(ordered.slice(0, 2).map((m) => m.id), [73, 76]);
+  assert.deepEqual(ordered.slice(2, 4).map((m) => m.id), [75, 78]);
 });
 
 test("orderMatchesForBracketDisplay keeps R16 in kickoff order for feeder alignment", () => {
@@ -75,14 +75,14 @@ test("R32 display order feeds the correct R16 fixture for each bracketkit pair",
   );
 
   const feeders: [r16: number, m1: number, m2: number][] = [
-    [89, 74, 77],
-    [90, 73, 75],
-    [91, 76, 78],
-    [92, 79, 80],
-    [93, 83, 84],
-    [94, 81, 82],
-    [95, 86, 88],
-    [96, 85, 87],
+    [89, 73, 76],
+    [90, 75, 78],
+    [91, 74, 77],
+    [92, 79, 82],
+    [93, 81, 80],
+    [94, 83, 86],
+    [95, 85, 88],
+    [96, 87, 84],
   ];
 
   for (let i = 0; i < feeders.length; i++) {

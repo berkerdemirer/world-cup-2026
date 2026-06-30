@@ -19,8 +19,8 @@ const MAIN_BRACKET_STAGES: Stage[] = KNOCKOUT_STAGES.filter((s) => s !== "THIRD_
  * @see https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/knockout-stage-match-schedule-bracket
  */
 const BRACKET_DISPLAY_ORDER: Partial<Record<Stage, readonly number[]>> = {
-  // R16 feeders: 89←74+77, 90←73+75, 91←76+78, 92←79+80, 93←83+84, 94←81+82, 95←86+88, 96←85+87
-  LAST_32: [1, 4, 0, 2, 3, 5, 6, 7, 10, 11, 8, 9, 13, 15, 12, 14],
+  // R16 feeders (R16 in kickoff order): 89←73+76, 90←75+78, 96←74+77, 91←79+82, 92←81+80, 93←83+86, 94←85+88, 95←87+84
+  LAST_32: [0, 3, 2, 5, 1, 4, 6, 9, 8, 7, 10, 13, 12, 15, 14, 11],
 };
 
 /** Reorder a round's matches so bracketkit connectors match FIFA's knockout tree. */
