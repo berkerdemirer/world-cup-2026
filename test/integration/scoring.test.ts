@@ -175,6 +175,30 @@ test("recomputeScores grades knockouts on post-extra-time score, not pens", asyn
   assert.equal((await scoreFor(cardo.id)).totalPoints, 2, "2-2 vs 1-1 is a correct draw outcome");
 });
 
+test("recomputeScores awards bracket points to pen winners before next-round fixtures exist", async () => {
+  await seedTeam(100, "Germany");
+  await seedTeam(200, "Paraguay");
+  await seedMatch({
+    id: 50,
+    stage: "LAST_32",
+    status: "FINISHED",
+    homeTeamId: 100,
+    awayTeamId: 200,
+    homeScore: 1,
+    awayScore: 1,
+    homePens: 4,
+    awayPens: 5,
+    advancingTeamId: null,
+  });
+
+  const u = await seedUser("Bracket");
+  await seedBracketPick(u.id, "LAST_16", "1", 200);
+
+  await recomputeScores();
+
+  assert.equal((await scoreFor(u.id)).bracketPoints, 2, "Paraguay reached R16 via pens");
+});
+
 test("getLeaderboard ranks by total, then exact count, then join time", async () => {
   await seedTeam(764, "Brazil");
   await seedTeam(762, "Serbia");

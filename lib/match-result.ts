@@ -36,3 +36,33 @@ export function postExtraTimeScore(
 
   return { home, away };
 }
+
+export type AdvancingTeamInput = MatchResultInput & {
+  homeTeamId: number | null;
+  awayTeamId: number | null;
+  /** Optional API winner hint when scores are not yet complete. */
+  winnerSide?: "HOME_TEAM" | "AWAY_TEAM" | null;
+};
+
+/** Which team advanced from a finished knockout match (incl. penalties). */
+export function advancingTeamFromResult(input: AdvancingTeamInput): number | null {
+  const { homeTeamId, awayTeamId } = input;
+  if (homeTeamId == null || awayTeamId == null) return null;
+
+  const actual = postExtraTimeScore(input);
+  if (!actual) return null;
+
+  if (actual.home !== actual.away) {
+    return actual.home > actual.away ? homeTeamId : awayTeamId;
+  }
+
+  const ph = input.homePens;
+  const pa = input.awayPens;
+  if (ph != null && pa != null && ph !== pa) {
+    return ph > pa ? homeTeamId : awayTeamId;
+  }
+
+  if (input.winnerSide === "HOME_TEAM") return homeTeamId;
+  if (input.winnerSide === "AWAY_TEAM") return awayTeamId;
+  return null;
+}

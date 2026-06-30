@@ -14,7 +14,7 @@ import {
 // scoreTier lives in a DB-free module so it can be shared with client code.
 import { scoreTier, type ScoreTier } from "./score-tier";
 import { bracketLockGraceUntil, isBracketLocked, latestBracketLockAt } from "./bracket-lock";
-import { postExtraTimeScore } from "./match-result";
+import { postExtraTimeScore, advancingTeamFromResult } from "./match-result";
 export { scoreTier, type ScoreTier };
 export { isBracketLocked };
 
@@ -142,8 +142,9 @@ async function allMatches(): Promise<Match[]> {
 
 /**
  * For each bracket round, the set of team ids that actually reached it.
- * "Reached round R" = appears as a participant in a stage-R match. The
- * tournament WINNER is the advancing team of the FINAL.
+ * "Reached round R" = appears as a participant in a stage-R match, or
+ * advanced into R from the previous knockout round. The tournament WINNER is
+ * the advancing team of the FINAL.
  */
 export function teamsReachingRounds(all: Match[]): Map<BracketRound, Set<number>> {
   const result = new Map<BracketRound, Set<number>>();
@@ -165,14 +166,31 @@ export function teamsReachingRounds(all: Match[]): Map<BracketRound, Set<number>
     FINAL: "FINAL",
   };
 
+  const nextRound: Partial<Record<BracketRound, BracketRound>> = {
+    LAST_32: "LAST_16",
+    LAST_16: "QUARTER_FINALS",
+    QUARTER_FINALS: "SEMI_FINALS",
+    SEMI_FINALS: "FINAL",
+    FINAL: "WINNER",
+  };
+
   for (const m of all) {
     const round = stageToRound[m.stage];
     if (round) {
       add(round, m.homeTeamId);
       add(round, m.awayTeamId);
-    }
-    if (m.stage === "FINAL") {
-      add("WINNER", m.advancingTeamId);
+      if (m.status === "FINISHED") {
+        const advancer = advancingTeamFromResult({
+          homeTeamId: m.homeTeamId,
+          awayTeamId: m.awayTeamId,
+          homeScore: m.homeScore,
+          awayScore: m.awayScore,
+          homePens: m.homePens,
+          awayPens: m.awayPens,
+        });
+        const next = nextRound[round];
+        if (next && advancer != null) add(next, advancer);
+      }
     }
   }
   return result;

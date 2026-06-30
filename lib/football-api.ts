@@ -3,6 +3,7 @@ import { and, or, eq, lt, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { teams, matches, settings, type Stage, type MatchStatus } from "@/db/schema";
 import { recomputeScores, getSettings } from "@/lib/scoring";
+import { advancingTeamFromResult } from "@/lib/match-result";
 
 const BASE = "https://api.football-data.org/v4";
 const COMPETITION = "WC"; // FIFA World Cup
@@ -139,21 +140,19 @@ function apiPostExtraTimeScore(m: ApiMatch): { home: number | null; away: number
 function advancingTeam(m: ApiMatch): number | null {
   if (m.stage === "GROUP_STAGE") return null;
   if (m.status !== "FINISHED") return null;
-  const hId = m.homeTeam.id;
-  const aId = m.awayTeam.id;
-  if (hId == null || aId == null) return null;
 
-  const h = m.score.fullTime.home ?? 0;
-  const a = m.score.fullTime.away ?? 0;
-  if (h !== a) return h > a ? hId : aId;
-
-  const ph = m.score.penalties?.home;
-  const pa = m.score.penalties?.away;
-  if (ph != null && pa != null && ph !== pa) return ph > pa ? hId : aId;
-
-  if (m.score.winner === "HOME_TEAM") return hId;
-  if (m.score.winner === "AWAY_TEAM") return aId;
-  return null;
+  return advancingTeamFromResult({
+    homeTeamId: m.homeTeam.id,
+    awayTeamId: m.awayTeam.id,
+    homeScore: m.score.fullTime.home,
+    awayScore: m.score.fullTime.away,
+    homePens: m.score.penalties?.home ?? null,
+    awayPens: m.score.penalties?.away ?? null,
+    winnerSide:
+      m.score.winner === "HOME_TEAM" || m.score.winner === "AWAY_TEAM"
+        ? m.score.winner
+        : null,
+  });
 }
 
 async function upsertTeam(t: ApiTeam): Promise<number | null> {

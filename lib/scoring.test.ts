@@ -94,11 +94,39 @@ test("teamsReachingRounds collects participants per stage and the winner", () =>
   const matches: Match[] = [
     m({ id: 1, stage: "QUARTER_FINALS", homeTeamId: 10, awayTeamId: 20 }),
     m({ id: 2, stage: "SEMI_FINALS", homeTeamId: 10, awayTeamId: 30 }),
-    m({ id: 3, stage: "FINAL", homeTeamId: 10, awayTeamId: 40, advancingTeamId: 10 }),
+    m({
+      id: 3,
+      stage: "FINAL",
+      status: "FINISHED",
+      homeTeamId: 10,
+      awayTeamId: 40,
+      homeScore: 2,
+      awayScore: 1,
+      advancingTeamId: 10,
+    }),
   ];
   const reached = teamsReachingRounds(matches);
   assert.deepEqual([...reached.get("QUARTER_FINALS")!].sort((a, b) => a - b), [10, 20]);
   assert.deepEqual([...reached.get("SEMI_FINALS")!].sort((a, b) => a - b), [10, 30]);
   assert.deepEqual([...reached.get("FINAL")!].sort((a, b) => a - b), [10, 40]);
   assert.deepEqual([...reached.get("WINNER")!], [10]);
+});
+
+test("teamsReachingRounds credits pen winners for the next round before fixtures fill", () => {
+  const matches: Match[] = [
+    m({
+      id: 1,
+      stage: "LAST_32",
+      status: "FINISHED",
+      homeTeamId: 100,
+      awayTeamId: 200,
+      homeScore: 1,
+      awayScore: 1,
+      homePens: 4,
+      awayPens: 5,
+    }),
+  ];
+  const reached = teamsReachingRounds(matches);
+  assert.deepEqual([...reached.get("LAST_32")!].sort((a, b) => a - b), [100, 200]);
+  assert.deepEqual([...reached.get("LAST_16")!], [200]);
 });
