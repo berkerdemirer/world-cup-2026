@@ -48,7 +48,7 @@ export function orderMatchesForBracketDisplay(
 export function toBracketkitRounds(rounds: KnockoutRound[]): BracketRound<MatchWithTeams>[] {
   const byStage = new Map(rounds.map((r) => [r.stage, r]));
 
-  return MAIN_BRACKET_STAGES.flatMap((stage) => {
+  const ordered: BracketRound<MatchWithTeams>[] = MAIN_BRACKET_STAGES.flatMap((stage) => {
     const round = byStage.get(stage);
     if (!round || round.matches.length === 0) return [];
     return [
@@ -59,6 +59,37 @@ export function toBracketkitRounds(rounds: KnockoutRound[]): BracketRound<MatchW
       },
     ];
   });
+
+  // football-data.org resolves future-round participants lazily — fill in team
+  // slots from the previous round's advancingTeamId when the API hasn't done it yet.
+  for (let ri = 1; ri < ordered.length; ri++) {
+    const prev = ordered[ri - 1]!;
+    const curr = ordered[ri]!;
+    for (let i = 0; i < curr.matches.length; i++) {
+      const match = curr.matches[i]!;
+      const feederHome = prev.matches[2 * i];
+      const feederAway = prev.matches[2 * i + 1];
+
+      let updated = match;
+      if (match.homeTeam == null && feederHome?.advancingTeamId != null) {
+        const team =
+          feederHome.advancingTeamId === feederHome.homeTeamId
+            ? feederHome.homeTeam
+            : feederHome.awayTeam;
+        updated = { ...updated, homeTeam: team, homeTeamId: feederHome.advancingTeamId };
+      }
+      if (match.awayTeam == null && feederAway?.advancingTeamId != null) {
+        const team =
+          feederAway.advancingTeamId === feederAway.homeTeamId
+            ? feederAway.homeTeam
+            : feederAway.awayTeam;
+        updated = { ...updated, awayTeam: team, awayTeamId: feederAway.advancingTeamId };
+      }
+      if (updated !== match) curr.matches[i] = updated;
+    }
+  }
+
+  return ordered;
 }
 
 export function getThirdPlaceMatch(rounds: KnockoutRound[]): MatchWithTeams | null {
