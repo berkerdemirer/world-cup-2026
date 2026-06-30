@@ -75,14 +75,14 @@ test("R32 display order feeds the correct R16 fixture for each bracketkit pair",
   );
 
   const feeders: [r16: number, m1: number, m2: number][] = [
-    [89, 73, 76],
-    [90, 75, 78],
-    [91, 74, 77],
-    [92, 79, 82],
-    [93, 81, 80],
-    [94, 83, 86],
-    [95, 85, 88],
-    [96, 87, 84],
+    [89, 73, 76], // South Africa/Canada + Netherlands/Morocco
+    [90, 75, 78], // Germany/Paraguay + France/Sweden
+    [91, 74, 77], // Brazil/Japan + Ivory Coast/Norway
+    [92, 79, 80], // Mexico/Ecuador + England/Congo DR
+    [93, 83, 84], // Spain/Austria + Portugal/Croatia
+    [94, 81, 82], // Belgium/Senegal + USA/Bosnia
+    [95, 86, 87], // Australia/Egypt + Argentina/Cape Verde
+    [96, 85, 88], // Switzerland/Algeria + Colombia/Ghana
   ];
 
   for (let i = 0; i < feeders.length; i++) {
